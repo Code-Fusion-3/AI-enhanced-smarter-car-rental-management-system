@@ -2,7 +2,12 @@
 
 <div class="max-w-7xl mx-auto px-4 py-8">
     <h2 class="text-3xl font-bold text-gray-900 mb-6">My Rentals</h2>
-    
+    <?php if (isset($_GET['status']) && $_GET['status'] === 'success'): ?>
+        <div class="mb-6 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+            <strong class="font-bold">Success!</strong>
+            <span class="block sm:inline">Your rental booking has been confirmed.</span>
+        </div>
+    <?php endif; ?>
     <div class="bg-white shadow-lg rounded-lg overflow-hidden">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
