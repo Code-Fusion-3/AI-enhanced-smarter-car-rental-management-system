@@ -4,7 +4,41 @@ document.addEventListener('DOMContentLoaded', function() {
     const chatInput = document.getElementById('chat-input');
     const sendButton = document.getElementById('send-message');
     const toggleChat = document.getElementById('toggle-chat');
+    const chatLogo = document.getElementById('chat-logo');
+    const chatWindow = document.getElementById('chat-window');
+    const minimizeChat = document.getElementById('minimize-chat');
 
+    function addThinkingIndicator() {
+        const thinkingDiv = document.createElement('div');
+        thinkingDiv.className = 'flex items-start thinking-indicator';
+        thinkingDiv.innerHTML = `
+            <div class="bg-gray-100 rounded-lg px-4 py-2">
+                <div class="flex space-x-2">
+                    <div class="typing-dot w-1 h-1"></div>
+                    <div class="typing-dot w-1 h-1"></div>
+                    <div class="typing-dot w-1 h-1"></div>
+                </div>
+            </div>
+        `;
+        chatMessages.appendChild(thinkingDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        return thinkingDiv;
+    }
+
+
+
+
+    // Show chat window when logo clicked
+    chatLogo.addEventListener('click', () => {
+        chatLogo.classList.add('hidden');
+        chatWindow.classList.remove('hidden');
+    });
+
+    // Minimize chat window
+    minimizeChat.addEventListener('click', () => {
+        chatWindow.classList.add('hidden');
+        chatLogo.classList.remove('hidden');
+    });
     function addMessage(message, isUser = false) {
         const messageDiv = document.createElement('div');
         messageDiv.className = `flex items-start ${isUser ? 'justify-end' : ''}`;
@@ -18,12 +52,14 @@ document.addEventListener('DOMContentLoaded', function() {
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    function handleUserMessage() {
+ function handleUserMessage() {
         const message = chatInput.value.trim();
         if (!message) return;
 
         addMessage(message, true);
         chatInput.value = '';
+        
+        const thinkingIndicator = addThinkingIndicator();
 
         fetch('api/chat.php', {
             method: 'POST',
@@ -32,15 +68,21 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             body: JSON.stringify({ query: message })
         })
-        .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
+           // Take some time to show the thinking indicator
+           setTimeout(() => {
+            thinkingIndicator.remove();
             addMessage(data.response);
+        }, 1500); // 2 second delay
+            
         })
         .catch(error => {
+              // Take some time to show the thinking indicator
+           setTimeout(() => {
+            thinkingIndicator.remove();
             addMessage("Let me connect you with our latest information! Please try your question again.");
+        }, 1500); // 2 second delay
         });
     }
 

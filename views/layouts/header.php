@@ -6,6 +6,8 @@
     <title>Smart Car Rental System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="assets/css/style.css">
+    <link href="assets/css/chat.css" rel="stylesheet">  <!-- Add this line -->
+
     <!-- Add before closing body tag -->
 <?php require 'views/components/chat-widget.php'; ?>
 <script src="assets/js/chat.js"></script>
