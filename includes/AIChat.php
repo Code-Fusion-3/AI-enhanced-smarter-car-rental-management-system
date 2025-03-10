@@ -4,15 +4,46 @@ class AIChat {
     private $currentState = null;
     private $db;
     private $selectedCar = null;
-    private $carSelectionKeywords = [];
+   
 
     public function __construct($connection) {
         $this->db = $connection;
+        $this->initializeCarKeywords();
     }
-
-
-
     
+    private function initializeCarKeywords() {
+        // Fetch all car makes and models from database
+        $sql = "SELECT DISTINCT make, model FROM cars";
+        $result = $this->db->query($sql);
+        
+        $carKeywords = [];
+        while ($car = $result->fetch_assoc()) {
+            $carKeywords[] = strtolower($car['make']);
+            $carKeywords[] = strtolower($car['model']);
+        }
+    // Update the responses array with dynamic car keywords
+    $this->responses['car_selection'] = [
+        'keywords' => array_unique($carKeywords),
+        'responses' => [
+            "The {CAR} is an excellent choice! Here are the details:\n" .
+            "- Make: {MAKE}\n" .
+            "- Model: {MODEL}\n" .
+            "- Year: {YEAR}\n" .
+            "- Daily Rate: ${RATE}\n" .
+            "- Features: {FEATURES}\n" .
+            "Would you like to book it for specific dates?",
+            
+            "Great pick! The {CAR} is currently available. Details:\n" .
+            "- Make: {MAKE}\n" .
+            "- Model: {MODEL}\n" .
+            "- Year: {YEAR}\n" .
+            "- Daily Rate: ${RATE}\n" .
+            "- Features: {FEATURES}\n" .
+            "When would you like to rent it?"
+        ]
+    ];
+}
+
     private $responses = [
         'greeting' => [
             'keywords' => ['hello', 'hi', 'hey', 'hy' ,'morning', 'afternoon', 'evening'],
@@ -51,7 +82,7 @@ class AIChat {
             ]
         ],
         'pricing_dynamic' => [
-            'keywords' => ['price', 'cost', 'rate', 'expensive', 'cheap', 'affordable'],
+            'keywords' => ['price', 'pricing' ,'cost', 'rate', 'expensive', 'cheap', 'affordable'],
             'responses' => [
                 "Our smart pricing system ensures the best rates based on real-time demand. Currently, prices start at $45/day for compact cars. Would you like to see current rates for specific vehicles?",
                 "We use dynamic pricing to give you the best deals. Premium vehicles might cost more, but we often have special offers. What's your budget range?"
@@ -88,24 +119,34 @@ class AIChat {
             return "Perfect! Which car catches your eye? Just mention the model name and I'll share all the details.";
         }
 
-        // Handle car selection from database
-        if ($this->currentState === 'showing_cars') {
+       // Check for car selection
+    foreach ($this->responses['car_selection']['keywords'] as $keyword) {
+        if (strpos($query, $keyword) !== false) {
+            // Fetch car details from database
             $sql = "SELECT * FROM cars WHERE LOWER(make) LIKE ? OR LOWER(model) LIKE ?";
-            $searchTerm = "%$query%";
+            $searchTerm = "%$keyword%";
             $stmt = $this->db->prepare($sql);
             $stmt->bind_param("ss", $searchTerm, $searchTerm);
             $stmt->execute();
             $result = $stmt->get_result();
             
             if ($car = $result->fetch_assoc()) {
+                $response = $this->getRandomResponse($this->responses['car_selection']['responses']);
+                
+                // Replace placeholders with actual car data
+                $carName = $car['make'] . ' ' . $car['model'];
+                $response = str_replace(
+                    ['{CAR}', '{MAKE}', '{MODEL}', '{YEAR}', '{RATE}', '{FEATURES}'],
+                    [$carName, $car['make'], $car['model'], $car['year'], $car['daily_rate'], $car['features']],
+                    $response
+                );
+                
+                $this->selectedCar = $car;
                 $this->currentState = 'booking';
-                return "Excellent choice! The {$car['make']} {$car['model']} features:\n
-                - Year: {$car['year']}\n
-                - Daily Rate: $" . $car['daily_rate'] . "\n
-                - Features: {$car['features']}\n
-                When would you like to rent it? I can check availability for your dates.";
+                return $response;
             }
         }
+    }
 
         // Show available cars from database
         if (strpos($query, 'available') !== false || strpos($query, 'car') !== false) {
@@ -129,25 +170,15 @@ class AIChat {
             }
         }
 
-        return "I can show you our available cars, specific models, or help you book right away. What would you like to explore?";
-    }
+        if (strpos($query, 'available') !== false || strpos($query, 'car') !== false) {
+            return "I can show you our available cars, specific models, or help you book right away. What would you like to explore?";
 
-    
-// get car selected keywords as name of car
-    private function getCarSelectedKeywords($query) {
-        $keywords = [];
-        $query = strtolower($query);
-        foreach ($this->responses as $type => $data) {
-            foreach ($data['keywords'] as $keyword) {
-                if (strpos($query, $keyword) !== false) {
-                    $keywords[] = $keyword;
-                }
-            }
         }
-        return $keywords;
-    }
-    
+        return $this->getDefaultResponse();
 
+    }
+
+    
     private function getRandomResponse($responses) {
         return $responses[array_rand($responses)];
     }
