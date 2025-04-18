@@ -1,0 +1,23 @@
+{
+	"folders": [
+		{
+			"path": "../lawyer"
+		},
+		{
+			"path": "../recruitment_system"
+		},
+		{
+			"path": "."
+		},
+		{
+			"path": "../advocate-management-system"
+		},
+		{
+			"path": "../staySync"
+		},
+		{
+			"path": "../Ai-Enhanced-Property-Management-System"
+		}
+	],
+	"settings": {}
+}
