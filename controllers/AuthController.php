@@ -39,13 +39,27 @@ class AuthController {
         $username = sanitize($_POST['username']);
         $password = $_POST['password'];
         
-        if ($this->user->login($username, $password)) {
-            header('Location: index.php');
+        $loginResult = $this->user->login($username, $password);
+        
+        if ($loginResult) {
+            // Update last_login timestamp
+            $this->user->updateLastLogin($_SESSION['user_id']);
+            
+            // Log the successful login
+            logActivity($this->user->getDb(), $_SESSION['user_id'], 'login', 'User logged in successfully');
+            
+            // Redirect based on role
+            if ($loginResult === 'admin') {
+                header('Location: index.php?page=admin&action=dashboard');
+            } else {
+                header('Location: index.php'); // Regular users go to homepage
+            }
         } else {
             header('Location: index.php?page=auth&action=login&error=1');
         }
         exit();
     }
+    
     
     private function processRegistration() {
         $username = sanitize($_POST['username']);

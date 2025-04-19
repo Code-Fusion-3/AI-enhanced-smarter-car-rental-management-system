@@ -22,6 +22,11 @@ class Router {
                 $controller = new AuthController();
                 $controller->handle();
                 break;
+                case 'admin':
+                    require 'controllers/AdminController.php';
+                    $controller = new AdminController();
+                    $controller->handle();
+                    break;
             case 'terms':
                 require 'views/terms.php';
                 break;

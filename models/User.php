@@ -43,9 +43,20 @@ class User {
             $_SESSION['user_id'] = $result['user_id'];
             $_SESSION['username'] = $result['username'];
             $_SESSION['role'] = $result['role'];
-            return true;
+            return $result['role']; // Return the user's role
         }
         return false;
+    }
+    
+    public function updateLastLogin($userId) {
+        $sql = "UPDATE users SET last_login = NOW() WHERE user_id = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $userId);
+        return $stmt->execute();
+    }
+    
+    public function getDb() {
+        return $this->db;
     }
     
     public function getUserById($userId) {
