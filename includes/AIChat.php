@@ -29,7 +29,7 @@ class AIChat {
             "- Make: {MAKE}\n" .
             "- Model: {MODEL}\n" .
             "- Year: {YEAR}\n" .
-            "- Daily Rate: ${RATE}\n" .
+            "- Daily Rate: {RATE}\n" .
             "- Features: {FEATURES}\n" .
             "Would you like to book it for specific dates?",
             
@@ -37,7 +37,7 @@ class AIChat {
             "- Make: {MAKE}\n" .
             "- Model: {MODEL}\n" .
             "- Year: {YEAR}\n" .
-            "- Daily Rate: ${RATE}\n" .
+            "- Daily Rate: {RATE}\n" .
             "- Features: {FEATURES}\n" .
             "When would you like to rent it?"
         ]

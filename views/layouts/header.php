@@ -33,4 +33,5 @@
             </div>
         </div>
     </nav>
+    <?php require_once 'views/components/notifications.php'; ?>
 

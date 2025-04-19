@@ -5,15 +5,32 @@ class User {
     public function __construct($db) {
         $this->db = $db;
     }
-    
     public function register($username, $password, $email, $fullName) {
-        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-        $sql = "INSERT INTO users (username, password, email, full_name, role) 
-                VALUES (?, ?, ?, ?, 'customer')";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bind_param("ssss", $username, $hashedPassword, $email, $fullName);
-        return $stmt->execute();
+        try {
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            $sql = "INSERT INTO users (username, password, email, full_name, role) 
+                    VALUES (?, ?, ?, ?, 'customer')";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bind_param("ssss", $username, $hashedPassword, $email, $fullName);
+            return $stmt->execute();
+        } catch (mysqli_sql_exception $e) {
+            // Check for duplicate entry errors
+            if ($e->getCode() == 1062) { // MySQL error code for duplicate entry
+                // Determine which field caused the duplicate
+                if (strpos($e->getMessage(), 'username')) {
+                    $_SESSION['register_error'] = "Username already exists. Please choose a different username.";
+                } else if (strpos($e->getMessage(), 'email')) {
+                    $_SESSION['register_error'] = "Email address already registered. Please use a different email.";
+                } else {
+                    $_SESSION['register_error'] = "Registration failed due to duplicate information.";
+                }
+            } else {
+                $_SESSION['register_error'] = "Registration failed. Please try again later.";
+            }
+            return false;
+        }
     }
+    
     
     public function login($username, $password) {
         $sql = "SELECT * FROM users WHERE username = ?";

@@ -11,6 +11,8 @@
                         <li><a href="index.php" class="hover:text-blue-400">Home</a></li>
                         <li><a href="index.php?page=cars" class="hover:text-blue-400">Cars</a></li>
                         <li><a href="index.php?page=auth&action=login" class="hover:text-blue-400">Login</a></li>
+                        <li><a href="index.php?page=terms" class="hover:text-blue-400">Terms of Service</a></li>
+                        <li><a href="index.php?page=privacy" class="hover:text-blue-400">Privacy Policy</a></li>
                     </ul>
                 </div>
                 <div>

@@ -53,13 +53,36 @@ class AuthController {
         $email = sanitize($_POST['email']);
         $fullName = sanitize($_POST['full_name']);
         
+        // Basic validation
+        if (empty($username) || empty($password) || empty($email) || empty($fullName)) {
+            $_SESSION['register_error'] = "All fields are required.";
+            header('Location: index.php?page=auth&action=register&error=1');
+            exit();
+        }
+        
+        // Password length validation
+        if (strlen($password) < 8) {
+            $_SESSION['register_error'] = "Password must be at least 8 characters long.";
+            header('Location: index.php?page=auth&action=register&error=1');
+            exit();
+        }
+        
+        // Email validation
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $_SESSION['register_error'] = "Please enter a valid email address.";
+            header('Location: index.php?page=auth&action=register&error=1');
+            exit();
+        }
+        
         if ($this->user->register($username, $password, $email, $fullName)) {
             header('Location: index.php?page=auth&action=login&registered=1');
         } else {
+            // The specific error message is already set in the User model
             header('Location: index.php?page=auth&action=register&error=1');
         }
         exit();
     }
+    
     
     private function logout() {
         session_destroy();

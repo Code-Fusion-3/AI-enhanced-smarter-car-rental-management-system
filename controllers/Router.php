@@ -22,6 +22,12 @@ class Router {
                 $controller = new AuthController();
                 $controller->handle();
                 break;
+            case 'terms':
+                require 'views/terms.php';
+                break;
+            case 'privacy':
+                require 'views/privacy.php';
+                break;
             default:
                 require 'views/404.php';
         }
