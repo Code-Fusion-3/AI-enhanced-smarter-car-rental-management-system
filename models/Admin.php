@@ -311,4 +311,195 @@ class Admin {
         
         return $pendingRentals;
     }
+    // User Management Functions
+public function getAllUsers($search = '', $role = '', $status = '', $limit = null, $offset = null, $excludeAdmins = true) {
+    $sql = "SELECT * FROM users WHERE 1=1";
+    $params = [];
+    $types = "";
+    
+    if (!empty($search)) {
+        $sql .= " AND (username LIKE ? OR email LIKE ? OR full_name LIKE ?)";
+        $searchParam = "%$search%";
+        $params[] = $searchParam;
+        $params[] = $searchParam;
+        $params[] = $searchParam;
+        $types .= "sss";
+    }
+    
+    if (!empty($role)) {
+        $sql .= " AND role = ?";
+        $params[] = $role;
+        $types .= "s";
+    }
+    
+    if (!empty($status)) {
+        $sql .= " AND status = ?";
+        $params[] = $status;
+        $types .= "s";
+    }
+    
+    // Exclude admin users if requested
+    if ($excludeAdmins) {
+        $sql .= " AND role != 'admin'";
+    }
+    
+    $sql .= " ORDER BY user_id DESC";
+    
+    if ($limit !== null && $offset !== null) {
+        $sql .= " LIMIT ?, ?";
+        $params[] = $offset;
+        $params[] = $limit;
+        $types .= "ii";
+    }
+    
+    $stmt = $this->db->prepare($sql);
+    
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
+    
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $users = [];
+    while ($row = $result->fetch_assoc()) {
+        $users[] = $row;
+    }
+    
+    return $users;
+}
+
+    
+public function countUsers($search = '', $role = '', $status = '', $excludeAdmins = true) {
+    $sql = "SELECT COUNT(*) as total FROM users WHERE 1=1";
+    $params = [];
+    $types = "";
+    
+    if (!empty($search)) {
+        $sql .= " AND (username LIKE ? OR email LIKE ? OR full_name LIKE ?)";
+        $searchParam = "%$search%";
+        $params[] = $searchParam;
+        $params[] = $searchParam;
+        $params[] = $searchParam;
+        $types .= "sss";
+    }
+    
+    if (!empty($role)) {
+        $sql .= " AND role = ?";
+        $params[] = $role;
+        $types .= "s";
+    }
+    
+    if (!empty($status)) {
+        $sql .= " AND status = ?";
+        $params[] = $status;
+        $types .= "s";
+    }
+    
+    // Exclude admin users if requested
+    if ($excludeAdmins) {
+        $sql .= " AND role != 'admin'";
+    }
+    
+    $stmt = $this->db->prepare($sql);
+    
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
+    
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    
+    return $row['total'];
+}
+
+    public function getUserById($userId) {
+        $sql = "SELECT * FROM users WHERE user_id = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $userId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows === 0) {
+            return null;
+        }
+        
+        return $result->fetch_assoc();
+    }
+    
+    public function updateUser($userId, $userData) {
+        $sql = "UPDATE users SET 
+                username = ?, 
+                email = ?, 
+                full_name = ?, 
+                role = ?, 
+                status = ?";
+        
+        $params = [
+            $userData['username'],
+            $userData['email'],
+            $userData['full_name'],
+            $userData['role'],
+            $userData['status']
+        ];
+        $types = "sssss";
+        
+        // Add optional fields if they exist
+        if (isset($userData['phone'])) {
+            $sql .= ", phone = ?";
+            $params[] = $userData['phone'];
+            $types .= "s";
+        }
+        
+        if (isset($userData['address'])) {
+            $sql .= ", address = ?";
+            $params[] = $userData['address'];
+            $types .= "s";
+        }
+        
+        if (isset($userData['driver_license'])) {
+            $sql .= ", driver_license = ?";
+            $params[] = $userData['driver_license'];
+            $types .= "s";
+        }
+        
+        if (isset($userData['profile_image'])) {
+            $sql .= ", profile_image = ?";
+            $params[] = $userData['profile_image'];
+            $types .= "s";
+        }
+        
+        // Add user_id parameter
+        $sql .= " WHERE user_id = ?";
+        $params[] = $userId;
+        $types .= "i";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param($types, ...$params);
+        
+        return $stmt->execute();
+    }
+    
+    public function deleteUser($userId) {
+        // First check if user has any rentals
+        $sql = "SELECT COUNT(*) as count FROM rentals WHERE user_id = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $userId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+        
+        if ($row['count'] > 0) {
+            // User has rentals, cannot delete
+            return false;
+        }
+        
+        // Delete user
+        $sql = "DELETE FROM users WHERE user_id = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $userId);
+        
+        return $stmt->execute();
+    }
 }

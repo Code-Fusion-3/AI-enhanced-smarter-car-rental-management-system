@@ -171,18 +171,6 @@ ADD COLUMN `monthly_rate` decimal(10,2) DEFAULT NULL AFTER `weekly_rate`,
 ADD KEY `category_id` (`category_id`),
 ADD CONSTRAINT `cars_ibfk_1` FOREIGN KEY (`category_id`) REFERENCES `car_categories` (`category_id`);
 
-ALTER TABLE `cars` 
-ADD COLUMN `category_id` int(11) DEFAULT NULL AFTER `car_id`,
-ADD COLUMN `mileage` int(11) DEFAULT NULL AFTER `year`,
-ADD COLUMN `fuel_type` enum('petrol','diesel','electric','hybrid') DEFAULT NULL AFTER `mileage`,
-ADD COLUMN `transmission` enum('manual','automatic') DEFAULT NULL AFTER `fuel_type`,
-ADD COLUMN `seats` int(11) DEFAULT NULL AFTER `transmission`,
-ADD COLUMN `base_rate` decimal(10,2) NOT NULL AFTER `daily_rate`,
-ADD COLUMN `weekend_rate` decimal(10,2) DEFAULT NULL AFTER `base_rate`,
-ADD COLUMN `weekly_rate` decimal(10,2) DEFAULT NULL AFTER `weekend_rate`,
-ADD COLUMN `monthly_rate` decimal(10,2) DEFAULT NULL AFTER `weekly_rate`,
-ADD KEY `category_id` (`category_id`),
-ADD CONSTRAINT `cars_ibfk_1` FOREIGN KEY (`category_id`) REFERENCES `car_categories` (`category_id`);
 
 ALTER TABLE `rentals` 
 ADD COLUMN `pickup_location` varchar(100) DEFAULT NULL AFTER `end_date`,

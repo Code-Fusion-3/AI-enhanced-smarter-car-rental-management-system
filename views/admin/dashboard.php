@@ -4,7 +4,7 @@
         <!-- Admin Sidebar -->
         <?php require 'views/admin/sidebar.php'; ?>
         
-        <!-- Main Content -->
+        <!-- Main Content --> 
         <div class="flex-1 p-8">
             <h1 class="text-2xl font-semibold text-gray-900 mb-6">Admin Dashboard</h1>
             

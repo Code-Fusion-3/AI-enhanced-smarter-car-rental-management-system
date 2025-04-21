@@ -13,9 +13,6 @@
 </head>
 <body class="bg-gray-100">
    
-    <?php require_once 'views/components/notifications.php'; ?>
-
-
 <div class="w-64 bg-gray-800 text-white min-h-screen flex-shrink-0">
     <div class="p-4">
         <h2 class="text-xl font-semibold">Admin Panel</h2>
@@ -98,3 +95,4 @@
         </div>
     </nav>
 </div>
+<?php require_once 'views/components/notifications.php'; ?>
