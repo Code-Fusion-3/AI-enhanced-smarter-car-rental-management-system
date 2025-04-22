@@ -158,11 +158,7 @@
                                 <?php endforeach; ?>
                             <?php endif; ?>
                         </ul>
-                        <div class="mt-4 text-center">
-                            <a href="index.php?page=admin&action=activity" class="text-sm font-medium text-blue-600 hover:text-blue-500">
-                                View all activity
-                            </a>
-                        </div>
+                        
                     </div>
                 </div>
                 

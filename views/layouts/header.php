@@ -25,6 +25,10 @@
                     <a href="index.php?page=cars" class="text-gray-700 hover:text-blue-600">Cars</a>
                     <?php if(isLoggedIn()): ?>
                         <a href="index.php?page=rentals" class="text-gray-700 hover:text-blue-600">My Rentals</a>
+                        <?php if(isAdmin()): ?>
+                            <a href="index.php?page=admin&action=dashboard" class="text-gray-700 hover:text-blue-600">Dashboard</a>
+                        <?php endif; ?>
+                        <a href="index.php?page=profile" class="text-gray-700 hover:text-blue-600">My Profile</a>
                         <a href="index.php?page=auth&action=logout" class="text-gray-700 hover:text-blue-600">Logout</a>
                     <?php else: ?>
                         <a href="index.php?page=auth&action=login" class="text-gray-700 hover:text-blue-600">Login</a>
@@ -34,4 +38,3 @@
         </div>
     </nav>
     <?php require_once 'views/components/notifications.php'; ?>
-

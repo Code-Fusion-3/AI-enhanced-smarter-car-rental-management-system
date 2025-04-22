@@ -22,7 +22,12 @@ class Router {
                 $controller = new AuthController();
                 $controller->handle();
                 break;
-                case 'admin':
+            case 'profile':
+                    require 'controllers/UserController.php';
+                    $controller = new UserController();
+                    $controller->handle();
+                    break;
+            case 'admin':
                     require 'controllers/AdminController.php';
                     $controller = new AdminController();
                     $controller->handle();
