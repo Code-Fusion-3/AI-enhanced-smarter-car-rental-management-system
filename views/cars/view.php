@@ -148,7 +148,7 @@
                         <div class="flex justify-between items-center mb-6">
                             <div>
                                 <span class="text-3xl font-bold text-blue-600">
-                                    $<?= number_format($dynamicPrice, 2) ?>
+                                    $<?= number_format((float)$dynamicPrice, 2) ?>
                                 </span>
                                 <span class="text-gray-600">/day</span>
                                 
@@ -275,7 +275,7 @@
                                                 Daily
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                $<?= number_format($dynamicPrice, 2) ?>
+                                                $<?= number_format((float)$dynamicPrice, 2) ?>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                 -
@@ -290,11 +290,11 @@
                                                 $<?= number_format($car['weekend_rate'], 2) ?>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">
-                                                <?php 
-                                                $savings = ($dynamicPrice * 3) - ($car['weekend_rate'] * 3);
-                                                echo ($savings > 0) ? 'Save $' . number_format($savings, 2) : '-';
-                                              
-                                                ?>
+                                            <?php 
+$savings = ((float)$dynamicPrice * 3) - ($car['weekend_rate'] * 3);
+echo ($savings > 0) ? 'Save $' . number_format($savings, 2) : '-';
+?>
+
                                             </td>
                                         </tr>
                                         <?php endif; ?>
@@ -307,11 +307,11 @@
                                                 $<?= number_format($car['weekly_rate'], 2) ?>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">
-                                                <?php 
-                                                $savings = ($dynamicPrice * 7) - $car['weekly_rate'];
-                                                echo ($savings > 0) ? 'Save $' . number_format($savings, 2) : '-';
-                                                
-                                                ?>
+                                            <?php 
+$savings = ((float)$dynamicPrice * 7) - $car['weekly_rate'];
+echo ($savings > 0) ? 'Save $' . number_format($savings, 2) : '-';
+?>
+
                                             </td>
                                         </tr>
                                         <?php endif; ?>
@@ -324,11 +324,11 @@
                                                 $<?= number_format($car['monthly_rate'], 2) ?>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">
-                                                <?php 
-                                                $savings = ($dynamicPrice * 30) - $car['monthly_rate'];
-                                                echo ($savings > 0) ? 'Save $' . number_format($savings, 2) : '-';
-                                               
-                                                ?>
+                                            <?php 
+$savings = ((float)$dynamicPrice * 30) - $car['monthly_rate'];
+echo ($savings > 0) ? 'Save $' . number_format($savings, 2) : '-';
+?>
+
                                             </td>
                                         </tr>
                                         <?php endif; ?>
@@ -506,7 +506,7 @@
                                 <div class="mb-6">
                                     <div class="flex justify-between py-2 text-sm">
                                         <span class="text-gray-600">Daily Rate:</span>
-                                        <span class="text-gray-900 font-medium">$<?= number_format($dynamicPrice, 2) ?></span>
+                                        <span class="text-gray-900 font-medium">$<?= number_format((float)$dynamicPrice, 2) ?></span>
                                     </div>
                                     <div class="flex justify-between py-2 text-sm border-t border-gray-200">
                                         <span class="text-gray-600">Rental Days:</span>

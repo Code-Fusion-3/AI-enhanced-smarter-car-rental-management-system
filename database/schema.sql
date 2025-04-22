@@ -1,4 +1,4 @@
-CREATE DATABASE car_rental_system;
+-- CREATE DATABASE car_rental_system;
 USE car_rental_system;
 
 -- Users table
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS rental_history (
 );
 
 -- new tables 
-CREATE TABLE `payments` (
+CREATE TABLE IF NOT EXISTS `payments` (
   `payment_id` int(11) NOT NULL AUTO_INCREMENT,
   `rental_id` int(11) NOT NULL,
   `amount` decimal(10,2) NOT NULL,
@@ -64,9 +64,9 @@ CREATE TABLE `payments` (
   PRIMARY KEY (`payment_id`),
   KEY `rental_id` (`rental_id`),
   CONSTRAINT `payments_ibfk_1` FOREIGN KEY (`rental_id`) REFERENCES `rentals` (`rental_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE `promotions` (
+CREATE TABLE IF NOT EXISTS `promotions` (
   `promotion_id` int(11) NOT NULL AUTO_INCREMENT,
   `code` varchar(20) NOT NULL,
   `description` text DEFAULT NULL,
@@ -78,9 +78,9 @@ CREATE TABLE `promotions` (
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`promotion_id`),
   UNIQUE KEY `code` (`code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
 
-CREATE TABLE `maintenance_records` (
+CREATE TABLE IF NOT EXISTS `maintenance_records` (
   `maintenance_id` int(11) NOT NULL AUTO_INCREMENT,
   `car_id` int(11) NOT NULL,
   `maintenance_type` enum('routine','repair','inspection') NOT NULL,
@@ -93,9 +93,9 @@ CREATE TABLE `maintenance_records` (
   PRIMARY KEY (`maintenance_id`),
   KEY `car_id` (`car_id`),
   CONSTRAINT `maintenance_records_ibfk_1` FOREIGN KEY (`car_id`) REFERENCES `cars` (`car_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
 
-CREATE TABLE `user_preferences` (
+CREATE TABLE IF NOT EXISTS `user_preferences` (
   `preference_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `preferred_car_type` varchar(50) DEFAULT NULL,
@@ -108,9 +108,9 @@ CREATE TABLE `user_preferences` (
   PRIMARY KEY (`preference_id`),
   UNIQUE KEY `user_id` (`user_id`),
   CONSTRAINT `user_preferences_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
 
-CREATE TABLE `notifications` (
+CREATE TABLE IF NOT EXISTS `notifications` (
   `notification_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `title` varchar(100) NOT NULL,
@@ -122,18 +122,18 @@ CREATE TABLE `notifications` (
   PRIMARY KEY (`notification_id`),
   KEY `user_id` (`user_id`),
   CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
 
-CREATE TABLE `car_categories` (
+CREATE TABLE IF NOT EXISTS `car_categories` (
   `category_id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(50) NOT NULL,
   `description` text DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`category_id`),
   UNIQUE KEY `name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
 
-CREATE TABLE `user_favorites` (
+CREATE TABLE IF NOT EXISTS `user_favorites` (
   `favorite_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `car_id` int(11) NOT NULL,
@@ -143,9 +143,9 @@ CREATE TABLE `user_favorites` (
   KEY `car_id` (`car_id`),
   CONSTRAINT `user_favorites_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`),
   CONSTRAINT `user_favorites_ibfk_2` FOREIGN KEY (`car_id`) REFERENCES `cars` (`car_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
 
-CREATE TABLE `system_logs` (
+CREATE TABLE IF NOT EXISTS `system_logs` (
   `log_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) DEFAULT NULL,
   `action` varchar(100) NOT NULL,
@@ -156,7 +156,7 @@ CREATE TABLE `system_logs` (
   PRIMARY KEY (`log_id`),
   KEY `user_id` (`user_id`),
   CONSTRAINT `system_logs_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ;
 
 ALTER TABLE `cars` 
 ADD COLUMN `category_id` int(11) DEFAULT NULL AFTER `car_id`,
