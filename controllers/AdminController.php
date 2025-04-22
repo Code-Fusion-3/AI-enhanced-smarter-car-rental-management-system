@@ -42,14 +42,17 @@ class AdminController {
                 break;
             case 'rentals':
                 $this->manageRentals();
-            //     break;
-            // case 'promotions':
-            //     $this->managePromotions();
-            //     break;
-           
-            // case 'reports':
-            //     $this->showReports();
-            //     break;
+                break;
+                case 'promotions':
+                    $this->handlePromotions();
+                    break;
+                    case 'maintenance':
+                        $this->handleMaintenance();
+                        break;
+         
+                        case 'reports':
+                            $this->handleReports();
+                            break;
             // case 'settings':
             //     $this->manageSettings();
             //     break;
@@ -1641,4 +1644,1010 @@ $car = [
                    header('Location: index.php?page=admin&action=rentals&subaction=view&id=' . $rentalId);
                    exit();
                }
+
+               private function handlePromotions() {
+                $subaction = isset($_GET['subaction']) ? $_GET['subaction'] : 'list';
+                
+                switch($subaction) {
+                    case 'list':
+                        $this->listPromotions();
+                        break;
+                    case 'add':
+                        $this->addPromotion();
+                        break;
+                    case 'edit':
+                        $this->editPromotion();
+                        break;
+                    case 'delete':
+                        $this->deletePromotion();
+                        break;
+                    case 'toggle':
+                        $this->togglePromotionStatus();
+                        break;
+                    default:
+                        $this->listPromotions();
+                }
+            }
+            
+            private function listPromotions() {
+                // Pagination setup
+                $page = isset($_GET['page_num']) ? (int)$_GET['page_num'] : 1;
+                $itemsPerPage = 10;
+                $offset = ($page - 1) * $itemsPerPage;
+                
+                // Search and filter
+                $search = isset($_GET['search']) ? $this->db->real_escape_string($_GET['search']) : '';
+                $status = isset($_GET['status']) ? $this->db->real_escape_string($_GET['status']) : '';
+                
+                // Base query
+                $sql = "SELECT * FROM promotions WHERE 1=1";
+                $countSql = "SELECT COUNT(*) as total FROM promotions WHERE 1=1";
+                
+                // Add search condition
+                if (!empty($search)) {
+                    $searchCondition = " AND (code LIKE '%$search%' OR description LIKE '%$search%')";
+                    $sql .= $searchCondition;
+                    $countSql .= $searchCondition;
+                }
+                
+                // Add status filter
+                if ($status === 'active') {
+                    $statusCondition = " AND is_active = 1 AND start_date <= CURDATE() AND end_date >= CURDATE()";
+                    $sql .= $statusCondition;
+                    $countSql .= $statusCondition;
+                } elseif ($status === 'inactive') {
+                    $statusCondition = " AND (is_active = 0 OR start_date > CURDATE() OR end_date < CURDATE())";
+                    $sql .= $statusCondition;
+                    $countSql .= $statusCondition;
+                }
+                
+                // Order and limit
+                $sql .= " ORDER BY created_at DESC LIMIT $offset, $itemsPerPage";
+                
+                // Execute queries
+                $result = $this->db->query($sql);
+                $promotions = $result->fetch_all(MYSQLI_ASSOC);
+                
+                $countResult = $this->db->query($countSql);
+                $totalItems = $countResult->fetch_assoc()['total'];
+                $totalPages = ceil($totalItems / $itemsPerPage);
+                
+                require 'views/admin/promotions/list.php';
+            }
+            
+            private function addPromotion() {
+                if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                    // Validate form data
+                    $code = $this->db->real_escape_string($_POST['code']);
+                    $description = $this->db->real_escape_string($_POST['description']);
+                    $discountPercentage = !empty($_POST['discount_percentage']) ? (float)$_POST['discount_percentage'] : null;
+                    $discountAmount = !empty($_POST['discount_amount']) ? (float)$_POST['discount_amount'] : null;
+                    $startDate = $this->db->real_escape_string($_POST['start_date']);
+                    $endDate = $this->db->real_escape_string($_POST['end_date']);
+                    $isActive = isset($_POST['is_active']) ? 1 : 0;
+                    
+                    // Validation
+                    $errors = [];
+                    
+                    if (empty($code)) {
+                        $errors[] = "Promotion code is required";
+                    } else {
+                        // Check if code already exists
+                        $checkSql = "SELECT COUNT(*) as count FROM promotions WHERE code = '$code'";
+                        $checkResult = $this->db->query($checkSql);
+                        if ($checkResult->fetch_assoc()['count'] > 0) {
+                            $errors[] = "Promotion code already exists";
+                        }
+                    }
+                    
+                    if (empty($description)) {
+                        $errors[] = "Description is required";
+                    }
+                    
+                    if (empty($discountPercentage) && empty($discountAmount)) {
+                        $errors[] = "Either discount percentage or amount must be provided";
+                    }
+                    
+                    if (empty($startDate)) {
+                        $errors[] = "Start date is required";
+                    }
+                    
+                    if (empty($endDate)) {
+                        $errors[] = "End date is required";
+                    }
+                    
+                    if (strtotime($endDate) < strtotime($startDate)) {
+                        $errors[] = "End date cannot be before start date";
+                    }
+                    
+                    if (empty($errors)) {
+                        // Insert new promotion
+                        $sql = "INSERT INTO promotions (code, description, discount_percentage, discount_amount, start_date, end_date, is_active) 
+                                VALUES (?, ?, ?, ?, ?, ?, ?)";
+                        
+                        $stmt = $this->db->prepare($sql);
+                        $stmt->bind_param("ssddssi", $code, $description, $discountPercentage, $discountAmount, $startDate, $endDate, $isActive);
+                        
+                        if ($stmt->execute()) {
+                            $_SESSION['success'] = "Promotion added successfully";
+                            header('Location: index.php?page=admin&action=promotions');
+                            exit();
+                        } else {
+                            $_SESSION['error'] = "Error adding promotion: " . $this->db->error;
+                        }
+                    } else {
+                        $_SESSION['error'] = implode("<br>", $errors);
+                    }
+                }
+                
+                require 'views/admin/promotions/add.php';
+            }
+            
+            private function editPromotion() {
+                $promotionId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+                
+                if ($promotionId <= 0) {
+                    $_SESSION['error'] = "Invalid promotion ID";
+                    header('Location: index.php?page=admin&action=promotions');
+                    exit();
+                }
+                
+                // Get promotion data
+                $sql = "SELECT * FROM promotions WHERE promotion_id = ?";
+                $stmt = $this->db->prepare($sql);
+                $stmt->bind_param("i", $promotionId);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                
+                if ($result->num_rows === 0) {
+                    $_SESSION['error'] = "Promotion not found";
+                    header('Location: index.php?page=admin&action=promotions');
+                    exit();
+                }
+                
+                $promotion = $result->fetch_assoc();
+                
+                if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                    // Validate form data
+                    $code = $this->db->real_escape_string($_POST['code']);
+                    $description = $this->db->real_escape_string($_POST['description']);
+                    $discountPercentage = !empty($_POST['discount_percentage']) ? (float)$_POST['discount_percentage'] : null;
+                    $discountAmount = !empty($_POST['discount_amount']) ? (float)$_POST['discount_amount'] : null;
+                    $startDate = $this->db->real_escape_string($_POST['start_date']);
+                    $endDate = $this->db->real_escape_string($_POST['end_date']);
+                    $isActive = isset($_POST['is_active']) ? 1 : 0;
+                    
+                    // Validation
+                    $errors = [];
+                    
+                    if (empty($code)) {
+                        $errors[] = "Promotion code is required";
+                    } else {
+                        // Check if code already exists (excluding current promotion)
+                        $checkSql = "SELECT COUNT(*) as count FROM promotions WHERE code = '$code' AND promotion_id != $promotionId";
+                        $checkResult = $this->db->query($checkSql);
+                        if ($checkResult->fetch_assoc()['count'] > 0) {
+                            $errors[] = "Promotion code already exists";
+                        }
+                    }
+                    
+                    if (empty($description)) {
+                        $errors[] = "Description is required";
+                    }
+                    
+                    if (empty($discountPercentage) && empty($discountAmount)) {
+                        $errors[] = "Either discount percentage or amount must be provided";
+                    }
+                    
+                    if (empty($startDate)) {
+                        $errors[] = "Start date is required";
+                    }
+                    
+                    if (empty($endDate)) {
+                        $errors[] = "End date is required";
+                    }
+                    
+                    if (strtotime($endDate) < strtotime($startDate)) {
+                        $errors[] = "End date cannot be before start date";
+                    }
+                    
+                    if (empty($errors)) {
+                        // Update promotion
+                        $sql = "UPDATE promotions 
+                                SET code = ?, description = ?, discount_percentage = ?, discount_amount = ?, 
+                                    start_date = ?, end_date = ?, is_active = ? 
+                                WHERE promotion_id = ?";
+                        
+                        $stmt = $this->db->prepare($sql);
+                        $stmt->bind_param("ssddssii", $code, $description, $discountPercentage, $discountAmount, $startDate, $endDate, $isActive, $promotionId);
+                        
+                        if ($stmt->execute()) {
+                            $_SESSION['success'] = "Promotion updated successfully";
+                            header('Location: index.php?page=admin&action=promotions');
+                            exit();
+                        } else {
+                            $_SESSION['error'] = "Error updating promotion: " . $this->db->error;
+                        }
+                    } else {
+                        $_SESSION['error'] = implode("<br>", $errors);
+                    }
+                }
+                
+                require 'views/admin/promotions/edit.php';
+            }
+            
+            private function deletePromotion() {
+                $promotionId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+                
+                if ($promotionId <= 0) {
+                    $_SESSION['error'] = "Invalid promotion ID";
+                    header('Location: index.php?page=admin&action=promotions');
+                    exit();
+                }
+                
+                // Check if promotion is used in any rentals
+                $checkSql = "SELECT COUNT(*) as count FROM rentals WHERE promotion_id = ?";
+                $checkStmt = $this->db->prepare($checkSql);
+                $checkStmt->bind_param("i", $promotionId);
+                $checkStmt->execute();
+                $checkResult = $checkStmt->get_result();
+                
+                if ($checkResult->fetch_assoc()['count'] > 0) {
+                    $_SESSION['error'] = "Cannot delete promotion as it is used in one or more rentals";
+                    header('Location: index.php?page=admin&action=promotions');
+                    exit();
+                }
+                
+                // Delete promotion
+                $sql = "DELETE FROM promotions WHERE promotion_id = ?";
+                $stmt = $this->db->prepare($sql);
+                $stmt->bind_param("i", $promotionId);
+                
+                if ($stmt->execute()) {
+                    $_SESSION['success'] = "Promotion deleted successfully";
+                } else {
+                    $_SESSION['error'] = "Error deleting promotion: " . $this->db->error;
+                }
+                
+                header('Location: index.php?page=admin&action=promotions');
+                exit();
+            }
+            
+            private function togglePromotionStatus() {
+                $promotionId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+                
+                if ($promotionId <= 0) {
+                    $_SESSION['error'] = "Invalid promotion ID";
+                    header('Location: index.php?page=admin&action=promotions');
+                    exit();
+                }
+                
+                // Get current status
+                $sql = "SELECT is_active FROM promotions WHERE promotion_id = ?";
+                $stmt = $this->db->prepare($sql);
+                $stmt->bind_param("i", $promotionId);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                
+                if ($result->num_rows === 0) {
+                    $_SESSION['error'] = "Promotion not found";
+                    header('Location: index.php?page=admin&action=promotions');
+                    exit();
+                }
+                
+                $currentStatus = $result->fetch_assoc()['is_active'];
+                $newStatus = $currentStatus ? 0 : 1;
+                
+                // Update status
+                $updateSql = "UPDATE promotions SET is_active = ? WHERE promotion_id = ?";
+                $updateStmt = $this->db->prepare($updateSql);
+                $updateStmt->bind_param("ii", $newStatus, $promotionId);
+                
+                if ($updateStmt->execute()) {
+                    $_SESSION['success'] = "Promotion status updated successfully";
+                } else {
+                    $_SESSION['error'] = "Error updating promotion status: " . $this->db->error;
+                }
+                
+                header('Location: index.php?page=admin&action=promotions');
+                exit();
+            }
+            private function handleMaintenance() {
+                $subaction = isset($_GET['subaction']) ? $_GET['subaction'] : 'list';
+                
+                switch($subaction) {
+                    case 'list':
+                        $this->listMaintenance();
+                        break;
+                    case 'add':
+                        $this->addMaintenance();
+                        break;
+                    case 'edit':
+                        $this->editMaintenance();
+                        break;
+                    case 'delete':
+                        $this->deleteMaintenance();
+                        break;
+                    case 'complete':
+                        $this->completeMaintenance();
+                        break;
+                    default:
+                        $this->listMaintenance();
+                }
+            }
+            
+            private function listMaintenance() {
+                // Pagination setup
+                $page = isset($_GET['page_num']) ? (int)$_GET['page_num'] : 1;
+                $itemsPerPage = 10;
+                $offset = ($page - 1) * $itemsPerPage;
+                
+                // Search and filter
+                $search = isset($_GET['search']) ? $this->db->real_escape_string($_GET['search']) : '';
+                $status = isset($_GET['status']) ? $this->db->real_escape_string($_GET['status']) : '';
+                $carId = isset($_GET['car_id']) ? (int)$_GET['car_id'] : 0;
+                
+                // Base query
+                $sql = "SELECT m.*, c.make, c.model, c.registration_number 
+                        FROM maintenance_records m
+                        JOIN cars c ON m.car_id = c.car_id
+                        WHERE 1=1";
+                $countSql = "SELECT COUNT(*) as total FROM maintenance_records m
+                             JOIN cars c ON m.car_id = c.car_id
+                             WHERE 1=1";
+                
+                // Add search condition
+                if (!empty($search)) {
+                    $searchCondition = " AND (c.make LIKE '%$search%' OR c.model LIKE '%$search%' 
+                                         OR c.registration_number LIKE '%$search%' OR m.description LIKE '%$search%')";
+                    $sql .= $searchCondition;
+                    $countSql .= $searchCondition;
+                }
+                
+                // Add status filter
+                if (!empty($status)) {
+                    $statusCondition = " AND m.status = '$status'";
+                    $sql .= $statusCondition;
+                    $countSql .= $statusCondition;
+                }
+                
+                // Add car filter
+                if ($carId > 0) {
+                    $carCondition = " AND m.car_id = $carId";
+                    $sql .= $carCondition;
+                    $countSql .= $carCondition;
+                }
+                
+                // Order and limit
+                $sql .= " ORDER BY m.start_date DESC LIMIT $offset, $itemsPerPage";
+                
+                // Execute queries
+                $result = $this->db->query($sql);
+                $maintenanceRecords = $result->fetch_all(MYSQLI_ASSOC);
+                
+                $countResult = $this->db->query($countSql);
+                $totalItems = $countResult->fetch_assoc()['total'];
+                $totalPages = ceil($totalItems / $itemsPerPage);
+                
+                // Get all cars for filter dropdown
+                $carsSql = "SELECT car_id, make, model, registration_number FROM cars ORDER BY make, model";
+                $carsResult = $this->db->query($carsSql);
+                $cars = $carsResult->fetch_all(MYSQLI_ASSOC);
+                
+                require 'views/admin/maintenance/list.php';
+            }
+            
+            private function addMaintenance() {
+                // Get all cars for dropdown
+                $carsSql = "SELECT car_id, make, model, registration_number FROM cars ORDER BY make, model";
+                $carsResult = $this->db->query($carsSql);
+                $cars = $carsResult->fetch_all(MYSQLI_ASSOC);
+                
+                if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                    // Validate form data
+                    $carId = (int)$_POST['car_id'];
+                    $maintenanceType = $this->db->real_escape_string($_POST['maintenance_type']);
+                    $description = $this->db->real_escape_string($_POST['description']);
+                    $cost = !empty($_POST['cost']) ? (float)$_POST['cost'] : null;
+                    $startDate = $this->db->real_escape_string($_POST['start_date']);
+                    $endDate = !empty($_POST['end_date']) ? $this->db->real_escape_string($_POST['end_date']) : null;
+                    $status = $this->db->real_escape_string($_POST['status']);
+                    
+                    // Validation
+                    $errors = [];
+                    
+                    if ($carId <= 0) {
+                        $errors[] = "Please select a car";
+                    }
+                    
+                    if (empty($description)) {
+                        $errors[] = "Description is required";
+                    }
+                    
+                    if (empty($startDate)) {
+                        $errors[] = "Start date is required";
+                    }
+                    
+                    if (empty($errors)) {
+                        // Insert new maintenance record
+                        $sql = "INSERT INTO maintenance_records (car_id, maintenance_type, description, cost, start_date, end_date, status) 
+                                VALUES (?, ?, ?, ?, ?, ?, ?)";
+                        
+                        $stmt = $this->db->prepare($sql);
+                        $stmt->bind_param("issdssss", $carId, $maintenanceType, $description, $cost, $startDate, $endDate, $status);
+                        
+                        if ($stmt->execute()) {
+                            // If maintenance is in progress or scheduled, update car status to maintenance
+                            if ($status !== 'completed') {
+                                $updateCarSql = "UPDATE cars SET status = 'maintenance' WHERE car_id = ?";
+                                $updateCarStmt = $this->db->prepare($updateCarSql);
+                                $updateCarStmt->bind_param("i", $carId);
+                                $updateCarStmt->execute();
+                            }
+                            
+                            $_SESSION['success'] = "Maintenance record added successfully";
+                            header('Location: index.php?page=admin&action=maintenance');
+                            exit();
+                        } else {
+                            $_SESSION['error'] = "Error adding maintenance record: " . $this->db->error;
+                        }
+                    } else {
+                        $_SESSION['error'] = implode("<br>", $errors);
+                    }
+                }
+                
+                require 'views/admin/maintenance/add.php';
+            }
+            
+            private function editMaintenance() {
+                $maintenanceId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+                
+                if ($maintenanceId <= 0) {
+                    $_SESSION['error'] = "Invalid maintenance ID";
+                    header('Location: index.php?page=admin&action=maintenance');
+                    exit();
+                }
+                
+                // Get maintenance data
+                $sql = "SELECT * FROM maintenance_records WHERE maintenance_id = ?";
+                $stmt = $this->db->prepare($sql);
+                $stmt->bind_param("i", $maintenanceId);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                
+                if ($result->num_rows === 0) {
+                    $_SESSION['error'] = "Maintenance record not found";
+                    header('Location: index.php?page=admin&action=maintenance');
+                    exit();
+                }
+                
+                $maintenance = $result->fetch_assoc();
+                
+                // Get all cars for dropdown
+                $carsSql = "SELECT car_id, make, model, registration_number FROM cars ORDER BY make, model";
+                $carsResult = $this->db->query($carsSql);
+                $cars = $carsResult->fetch_all(MYSQLI_ASSOC);
+                
+                if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                    // Validate form data
+                    $carId = (int)$_POST['car_id'];
+                    $maintenanceType = $this->db->real_escape_string($_POST['maintenance_type']);
+                    $description = $this->db->real_escape_string($_POST['description']);
+                    $cost = !empty($_POST['cost']) ? (float)$_POST['cost'] : null;
+                    $startDate = $this->db->real_escape_string($_POST['start_date']);
+                    $endDate = !empty($_POST['end_date']) ? $this->db->real_escape_string($_POST['end_date']) : null;
+                    $status = $this->db->real_escape_string($_POST['status']);
+                    
+                    // Validation
+                    $errors = [];
+                    
+                    if ($carId <= 0) {
+                        $errors[] = "Please select a car";
+                    }
+                    
+                    if (empty($description)) {
+                        $errors[] = "Description is required";
+                    }
+                    
+                    if (empty($startDate)) {
+                        $errors[] = "Start date is required";
+                    }
+                    
+                    if (empty($errors)) {
+                        // Get previous status for comparison
+                        $previousStatus = $maintenance['status'];
+                        
+                        // Update maintenance record
+                        $sql = "UPDATE maintenance_records 
+                                SET car_id = ?, maintenance_type = ?, description = ?, cost = ?, 
+                                    start_date = ?, end_date = ?, status = ? 
+                                WHERE maintenance_id = ?";
+                        
+                        $stmt = $this->db->prepare($sql);
+                        $stmt->bind_param("issdsssi", $carId, $maintenanceType, $description, $cost, $startDate, $endDate, $status, $maintenanceId);
+                        
+                        if ($stmt->execute()) {
+                            // Handle car status updates based on maintenance status changes
+                            if ($status === 'completed' && $previousStatus !== 'completed') {
+                                // Check if this is the only active maintenance for this car
+                                $checkSql = "SELECT COUNT(*) as count FROM maintenance_records 
+                                            WHERE car_id = ? AND status != 'completed' AND maintenance_id != ?";
+                                $checkStmt = $this->db->prepare($checkSql);
+                                $checkStmt->bind_param("ii", $carId, $maintenanceId);
+                                $checkStmt->execute();
+                                $checkResult = $checkStmt->get_result();
+                                $activeMaintenanceCount = $checkResult->fetch_assoc()['count'];
+                                
+                                if ($activeMaintenanceCount == 0) {
+                                    // No other active maintenance, set car back to available
+                                    $updateCarSql = "UPDATE cars SET status = 'available' WHERE car_id = ?";
+                                    $updateCarStmt = $this->db->prepare($updateCarSql);
+                                    $updateCarStmt->bind_param("i", $carId);
+                                    $updateCarStmt->execute();
+                                }
+                            } elseif ($status !== 'completed' && $previousStatus === 'completed') {
+                                // Maintenance reopened, set car to maintenance
+                                $updateCarSql = "UPDATE cars SET status = 'maintenance' WHERE car_id = ?";
+                                $updateCarStmt = $this->db->prepare($updateCarSql);
+                                $updateCarStmt->bind_param("i", $carId);
+                                $updateCarStmt->execute();
+                            }
+                            
+                            $_SESSION['success'] = "Maintenance record updated successfully";
+                            header('Location: index.php?page=admin&action=maintenance');
+                            exit();
+                        } else {
+                            $_SESSION['error'] = "Error updating maintenance record: " . $this->db->error;
+                        }
+                    } else {
+                        $_SESSION['error'] = implode("<br>", $errors);
+                    }
+                }
+                
+                require 'views/admin/maintenance/edit.php';
+            }
+            
+            private function deleteMaintenance() {
+                $maintenanceId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+                
+                if ($maintenanceId <= 0) {
+                    $_SESSION['error'] = "Invalid maintenance ID";
+                    header('Location: index.php?page=admin&action=maintenance');
+                    exit();
+                }
+                
+                // Get maintenance data to check car status
+                $sql = "SELECT car_id, status FROM maintenance_records WHERE maintenance_id = ?";
+                $stmt = $this->db->prepare($sql);
+                $stmt->bind_param("i", $maintenanceId);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                
+                if ($result->num_rows === 0) {
+                    $_SESSION['error'] = "Maintenance record not found";
+                    header('Location: index.php?page=admin&action=maintenance');
+                    exit();
+                }
+                
+                $maintenance = $result->fetch_assoc();
+                $carId = $maintenance['car_id'];
+                $maintenanceStatus = $maintenance['status'];
+                
+                // Delete maintenance record
+                $deleteSql = "DELETE FROM maintenance_records WHERE maintenance_id = ?";
+                $deleteStmt = $this->db->prepare($deleteSql);
+                $deleteStmt->bind_param("i", $maintenanceId);
+                
+                if ($deleteStmt->execute()) {
+                    // If the deleted record was active (not completed), check if there are other active records
+                    if ($maintenanceStatus !== 'completed') {
+                        $checkSql = "SELECT COUNT(*) as count FROM maintenance_records 
+                                    WHERE car_id = ? AND status != 'completed'";
+                        $checkStmt = $this->db->prepare($checkSql);
+                        $checkStmt->bind_param("i", $carId);
+                        $checkStmt->execute();
+                        $checkResult = $checkStmt->get_result();
+                        $activeMaintenanceCount = $checkResult->fetch_assoc()['count'];
+                        
+                        if ($activeMaintenanceCount == 0) {
+                            // No other active maintenance, set car back to available
+                            $updateCarSql = "UPDATE cars SET status = 'available' WHERE car_id = ?";
+                            $updateCarStmt = $this->db->prepare($updateCarSql);
+                            $updateCarStmt->bind_param("i", $carId);
+                            $updateCarStmt->execute();
+                        }
+                    }
+                    
+                    $_SESSION['success'] = "Maintenance record deleted successfully";
+                } else {
+                    $_SESSION['error'] = "Error deleting maintenance record: " . $this->db->error;
+                }
+                
+                header('Location: index.php?page=admin&action=maintenance');
+                exit();
+            }
+            
+            private function completeMaintenance() {
+                $maintenanceId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+                
+                if ($maintenanceId <= 0) {
+                    $_SESSION['error'] = "Invalid maintenance ID";
+                    header('Location: index.php?page=admin&action=maintenance');
+                    exit();
+                }
+                
+                // Get maintenance data
+                $sql = "SELECT car_id, status FROM maintenance_records WHERE maintenance_id = ?";
+                $stmt = $this->db->prepare($sql);
+                $stmt->bind_param("i", $maintenanceId);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                
+                if ($result->num_rows === 0) {
+                    $_SESSION['error'] = "Maintenance record not found";
+                    header('Location: index.php?page=admin&action=maintenance');
+                    exit();
+                }
+                
+                $maintenance = $result->fetch_assoc();
+                
+                // Only update if not already completed
+                if ($maintenance['status'] === 'completed') {
+                    $_SESSION['error'] = "Maintenance is already marked as completed";
+                    header('Location: index.php?page=admin&action=maintenance');
+                    exit();
+                }
+                
+                // Update maintenance record to completed with current date as end date
+                $currentDate = date('Y-m-d');
+                $updateSql = "UPDATE maintenance_records SET status = 'completed', end_date = ? WHERE maintenance_id = ?";
+                $updateStmt = $this->db->prepare($updateSql);
+                $updateStmt->bind_param("si", $currentDate, $maintenanceId);
+                
+                if ($updateStmt->execute()) {
+                    // Check if this car has any other active maintenance records
+                    $carId = $maintenance['car_id'];
+                    $checkSql = "SELECT COUNT(*) as count FROM maintenance_records 
+                                WHERE car_id = ? AND status != 'completed' AND maintenance_id != ?";
+                    $checkStmt = $this->db->prepare($checkSql);
+                    $checkStmt->bind_param("ii", $carId, $maintenanceId);
+                    $checkStmt->execute();
+                    $checkResult = $checkStmt->get_result();
+                    $activeMaintenanceCount = $checkResult->fetch_assoc()['count'];
+                    
+                    if ($activeMaintenanceCount == 0) {
+                        // No other active maintenance, set car back to available
+                        $updateCarSql = "UPDATE cars SET status = 'available' WHERE car_id = ?";
+                        $updateCarStmt = $this->db->prepare($updateCarSql);
+                        $updateCarStmt->bind_param("i", $carId);
+                        $updateCarStmt->execute();
+                    }
+                    
+                    $_SESSION['success'] = "Maintenance marked as completed successfully";
+                } else {
+                    $_SESSION['error'] = "Error completing maintenance: " . $this->db->error;
+                }
+                
+                header('Location: index.php?page=admin&action=maintenance');
+                exit();
+            }
+            private function handleReports() {
+                $reportType = isset($_GET['type']) ? $_GET['type'] : 'revenue';
+                
+                switch($reportType) {
+                    case 'revenue':
+                        $this->revenueReport();
+                        break;
+                    case 'utilization':
+                        $this->utilizationReport();
+                        break;
+                    case 'maintenance':
+                        $this->maintenanceReport();
+                        break;
+                    case 'customer':
+                        $this->customerReport();
+                        break;
+                    default:
+                        $this->revenueReport();
+                }
+            }
+            
+            private function revenueReport() {
+                // Get date range parameters
+                $startDate = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01'); // First day of current month
+                $endDate = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-t'); // Last day of current month
+                
+                // Get revenue data
+                $sql = "SELECT 
+                            DATE_FORMAT(r.created_at, '%Y-%m-%d') as date,
+                            SUM(r.total_cost) as daily_revenue,
+                            COUNT(r.rental_id) as rental_count
+                        FROM rentals r
+                        WHERE r.created_at BETWEEN ? AND ? 
+                        GROUP BY DATE_FORMAT(r.created_at, '%Y-%m-%d')
+                        ORDER BY date";
+                
+                $stmt = $this->db->prepare($sql);
+                $stmt->bind_param("ss", $startDate, $endDate);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $revenueData = $result->fetch_all(MYSQLI_ASSOC);
+                
+                // Get total revenue for the period
+                $totalSql = "SELECT 
+                                SUM(total_cost) as total_revenue,
+                                COUNT(rental_id) as total_rentals,
+                                AVG(total_cost) as average_rental
+                             FROM rentals
+                             WHERE created_at BETWEEN ? AND ?";
+                
+                $totalStmt = $this->db->prepare($totalSql);
+                $totalStmt->bind_param("ss", $startDate, $endDate);
+                $totalStmt->execute();
+                $totalResult = $totalStmt->get_result();
+                $totals = $totalResult->fetch_assoc();
+                
+                // Get revenue by car category
+                $categorySql = "SELECT 
+                                    cc.name as category,
+                                    SUM(r.total_cost) as revenue,
+                                    COUNT(r.rental_id) as rentals
+                                FROM rentals r
+                                JOIN cars c ON r.car_id = c.car_id
+                                JOIN car_categories cc ON c.category_id = cc.category_id
+                                WHERE r.created_at BETWEEN ? AND ?
+                                GROUP BY cc.category_id
+                                ORDER BY revenue DESC";
+                
+                $categoryStmt = $this->db->prepare($categorySql);
+                $categoryStmt->bind_param("ss", $startDate, $endDate);
+                $categoryStmt->execute();
+                $categoryResult = $categoryStmt->get_result();
+                $categoryData = $categoryResult->fetch_all(MYSQLI_ASSOC);
+                
+                // Prepare data for charts
+                $labels = [];
+                $revenues = [];
+                $counts = [];
+                
+                foreach ($revenueData as $data) {
+                    $labels[] = date('M d', strtotime($data['date']));
+                    $revenues[] = $data['daily_revenue'];
+                    $counts[] = $data['rental_count'];
+                }
+                
+                $chartData = [
+                    'labels' => json_encode($labels),
+                    'revenues' => json_encode($revenues),
+                    'counts' => json_encode($counts)
+                ];
+                
+                require 'views/admin/reports/revenue.php';
+            }
+            
+            private function utilizationReport() {
+                // Get date range parameters
+                $startDate = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01'); // First day of current month
+                $endDate = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-t'); // Last day of current month
+                
+                // Get total number of cars
+                $totalCarsSql = "SELECT COUNT(*) as total FROM cars";
+                $totalCarsResult = $this->db->query($totalCarsSql);
+                $totalCars = $totalCarsResult->fetch_assoc()['total'];
+                
+                // Get utilization data by car
+                $sql = "SELECT 
+                            c.car_id,
+                            c.make,
+                            c.model,
+                            c.registration_number,
+                            cc.name as category,
+                            COUNT(r.rental_id) as rental_count,
+                            SUM(DATEDIFF(r.end_date, r.start_date)) as total_rental_days,
+                            DATEDIFF(?, ?) + 1 as total_period_days,
+                            (SUM(DATEDIFF(r.end_date, r.start_date)) / (DATEDIFF(?, ?) + 1)) * 100 as utilization_rate
+                        FROM cars c
+                        LEFT JOIN car_categories cc ON c.category_id = cc.category_id
+                        LEFT JOIN rentals r ON c.car_id = r.car_id AND 
+                            ((r.start_date BETWEEN ? AND ?) OR 
+                             (r.end_date BETWEEN ? AND ?) OR 
+                             (r.start_date <= ? AND r.end_date >= ?))
+                        GROUP BY c.car_id
+                        ORDER BY utilization_rate DESC";
+                
+                $stmt = $this->db->prepare($sql);
+                $stmt->bind_param("ssssssssss", $endDate, $startDate, $endDate, $startDate, $startDate, $endDate, $startDate, $endDate, $startDate, $endDate);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $utilizationData = $result->fetch_all(MYSQLI_ASSOC);
+                
+                // Get utilization by category
+                $categorySql = "SELECT 
+                                    cc.name as category,
+                                    COUNT(DISTINCT c.car_id) as car_count,
+                                    COUNT(r.rental_id) as rental_count,
+                                    SUM(DATEDIFF(r.end_date, r.start_date)) as total_rental_days,
+                                    (COUNT(DISTINCT c.car_id) * (DATEDIFF(?, ?) + 1)) as total_available_days,
+                                    (SUM(DATEDIFF(r.end_date, r.start_date)) / (COUNT(DISTINCT c.car_id) * (DATEDIFF(?, ?) + 1))) * 100 as utilization_rate
+                                FROM car_categories cc
+                                LEFT JOIN cars c ON cc.category_id = c.category_id
+                                LEFT JOIN rentals r ON c.car_id = r.car_id AND 
+                                    ((r.start_date BETWEEN ? AND ?) OR 
+                                     (r.end_date BETWEEN ? AND ?) OR 
+                                     (r.start_date <= ? AND r.end_date >= ?))
+                                GROUP BY cc.category_id
+                                ORDER BY utilization_rate DESC";
+                
+                $categoryStmt = $this->db->prepare($categorySql);
+                $categoryStmt->bind_param("ssssssssss", $endDate, $startDate, $endDate, $startDate, $startDate, $endDate, $startDate, $endDate, $startDate, $endDate);
+                $categoryStmt->execute();
+                $categoryResult = $categoryStmt->get_result();
+                $categoryData = $categoryResult->fetch_all(MYSQLI_ASSOC);
+                
+                // Calculate overall utilization
+                $totalRentalDays = 0;
+                $totalAvailableDays = $totalCars * (strtotime($endDate) - strtotime($startDate)) / (60 * 60 * 24 + 1);
+                
+                foreach ($utilizationData as $data) {
+                    $totalRentalDays += $data['total_rental_days'];
+                }
+                
+                $overallUtilization = ($totalRentalDays / $totalAvailableDays) * 100;
+                
+                require 'views/admin/reports/utilization.php';
+            }
+            
+            private function maintenanceReport() {
+                // Get date range parameters
+                $startDate = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01', strtotime('-6 months')); // 6 months ago
+                $endDate = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d'); // Today
+                
+                // Get maintenance data
+                $sql = "SELECT 
+                            m.maintenance_id,
+                            c.make,
+                            c.model,
+                            c.registration_number,
+                            m.maintenance_type,
+                            m.description,
+                            m.cost,
+                            m.start_date,
+                            m.end_date,
+                            m.status
+                        FROM maintenance_records m
+                        JOIN cars c ON m.car_id = c.car_id
+                        WHERE m.start_date BETWEEN ? AND ?
+                        ORDER BY m.start_date DESC";
+                
+                $stmt = $this->db->prepare($sql);
+                $stmt->bind_param("ss", $startDate, $endDate);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $maintenanceData = $result->fetch_all(MYSQLI_ASSOC);
+                
+                // Get maintenance costs by type
+                $typeSql = "SELECT 
+                                maintenance_type,
+                                COUNT(*) as count,
+                                SUM(cost) as total_cost,
+                                AVG(cost) as average_cost
+                            FROM maintenance_records
+                            WHERE start_date BETWEEN ? AND ?
+                            GROUP BY maintenance_type
+                            ORDER BY total_cost DESC";
+                
+                $typeStmt = $this->db->prepare($typeSql);
+                $typeStmt->bind_param("ss", $startDate, $endDate);
+                $typeStmt->execute();
+                $typeResult = $typeStmt->get_result();
+                $typeData = $typeResult->fetch_all(MYSQLI_ASSOC);
+                
+                // Get maintenance costs by car
+                $carSql = "SELECT 
+                                c.car_id,
+                                c.make,
+                                c.model,
+                                c.registration_number,
+                                COUNT(m.maintenance_id) as maintenance_count,
+                                SUM(m.cost) as total_cost
+                            FROM cars c
+                            LEFT JOIN maintenance_records m ON c.car_id = m.car_id AND m.start_date BETWEEN ? AND ?
+                            GROUP BY c.car_id
+                            HAVING maintenance_count > 0
+                            ORDER BY total_cost DESC
+                            LIMIT 10";
+                
+                $carStmt = $this->db->prepare($carSql);
+                $carStmt->bind_param("ss", $startDate, $endDate);
+                $carStmt->execute();
+                $carResult = $carStmt->get_result();
+                $carData = $carResult->fetch_all(MYSQLI_ASSOC);
+                
+                // Calculate totals
+                $totalMaintenance = count($maintenanceData);
+                $totalCost = 0;
+                $completedCount = 0;
+                
+                foreach ($maintenanceData as $record) {
+                    $totalCost += $record['cost'];
+                    if ($record['status'] === 'completed') {
+                        $completedCount++;
+                    }
+                }
+                
+                $completionRate = $totalMaintenance > 0 ? ($completedCount / $totalMaintenance) * 100 : 0;
+                
+                require 'views/admin/reports/maintenance.php';
+            }
+            
+            private function customerReport() {
+                // Get date range parameters
+                $startDate = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01', strtotime('-12 months')); // 12 months ago
+                $endDate = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d'); // Today
+                
+                // Get top customers by revenue
+                $sql = "SELECT 
+                            u.user_id,
+                            u.username,
+                            u.full_name,
+                            u.email,
+                            COUNT(r.rental_id) as rental_count,
+                            SUM(r.total_cost) as total_spent,
+                            MAX(r.created_at) as last_rental
+                        FROM users u
+                        JOIN rentals r ON u.user_id = r.user_id
+                        WHERE r.created_at BETWEEN ? AND ?
+                        GROUP BY u.user_id
+                        ORDER BY total_spent DESC
+                        LIMIT 20";
+                
+                $stmt = $this->db->prepare($sql);
+                $stmt->bind_param("ss", $startDate, $endDate);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $customerData = $result->fetch_all(MYSQLI_ASSOC);
+                
+                // Get new customers per month
+                $newCustomersSql = "SELECT 
+                                        DATE_FORMAT(created_at, '%Y-%m') as month,
+                                        COUNT(*) as new_users
+                                    FROM users
+                                    WHERE created_at BETWEEN ? AND ?
+                                    GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+                                    ORDER BY month";
+                
+                $newCustomersStmt = $this->db->prepare($newCustomersSql);
+                $newCustomersStmt->bind_param("ss", $startDate, $endDate);
+                $newCustomersStmt->execute();
+                $newCustomersResult = $newCustomersStmt->get_result();
+                $newCustomersData = $newCustomersResult->fetch_all(MYSQLI_ASSOC);
+                
+                // Get customer preferences
+                $preferencesSql = "SELECT 
+                                      preferred_car_type,
+                                      COUNT(*) as count
+                                   FROM user_preferences
+                                   WHERE preferred_car_type IS NOT NULL
+                                   GROUP BY preferred_car_type
+                                   ORDER BY count DESC";
+                
+                $preferencesResult = $this->db->query($preferencesSql);
+                $preferencesData = $preferencesResult->fetch_all(MYSQLI_ASSOC);
+                
+                // Prepare data for charts
+                $months = [];
+                $newUsers = [];
+                
+                foreach ($newCustomersData as $data) {
+                    $months[] = date('M Y', strtotime($data['month'] . '-01'));
+                    $newUsers[] = $data['new_users'];
+                }
+                
+                $chartData = [
+                    'months' => json_encode($months),
+                    'newUsers' => json_encode($newUsers)
+                ];
+                
+                require 'views/admin/reports/customer.php';
+            }
 }
