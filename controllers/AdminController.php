@@ -481,10 +481,16 @@ class AdminController {
         $stmt->execute();
         $maintenanceResult = $stmt->get_result();
         $maintenanceRecords = $maintenanceResult->fetch_all(MYSQLI_ASSOC);
+// Calculate dynamic price
+$dynamicPriceData = $this->car->getDynamicPrice($carId);
+$dynamicPrice = $dynamicPriceData['final_rate']; // This is what you'll display in the view
+
         
         require 'views/admin/cars/view.php';
         exit();
     }
+
+    
     private function createCar() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: index.php?page=admin&action=cars');
@@ -2074,7 +2080,7 @@ $car = [
                                 VALUES (?, ?, ?, ?, ?, ?, ?)";
                         
                         $stmt = $this->db->prepare($sql);
-                        $stmt->bind_param("issdssss", $carId, $maintenanceType, $description, $cost, $startDate, $endDate, $status);
+                        $stmt->bind_param("issdsss", $carId, $maintenanceType, $description, $cost, $startDate, $endDate, $status);
                         
                         if ($stmt->execute()) {
                             // If maintenance is in progress or scheduled, update car status to maintenance

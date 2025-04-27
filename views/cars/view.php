@@ -148,15 +148,15 @@
                         <div class="flex justify-between items-center mb-6">
                             <div>
                                 <span class="text-3xl font-bold text-blue-600">
-                                    $<?= number_format((float)$dynamicPrice, 2) ?>
+                                    $<?= number_format((float)$car['daily_rate'], 2) ?>
                                 </span>
                                 <span class="text-gray-600">/day</span>
                                 
-                                <?php if ($dynamicPrice < $car['base_rate']): ?>
+                                <?php if ($car['daily_rate'] < $car['base_rate']): ?>
                                     <span class="ml-2 bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded">
-                                        <?= round((($car['base_rate'] - $dynamicPrice) / $car['base_rate']) * 100) ?>% OFF
+                                        <?= round((($car['base_rate'] - $car['daily_rate']) / $car['base_rate']) * 100) ?>% OFF
                                     </span>
-                                <?php elseif ($dynamicPrice > $car['base_rate']): ?>
+                                <?php elseif ($car['daily_rate'] > $car['base_rate']): ?>
                                     <span class="ml-2 bg-yellow-100 text-yellow-800 text-xs font-semibold px-2.5 py-0.5 rounded">
                                         High Demand
                                     </span>
@@ -275,7 +275,7 @@
                                                 Daily
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                $<?= number_format((float)$dynamicPrice, 2) ?>
+                                                $<?= number_format((float)$car['daily_rate'], 2) ?>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                 -
@@ -291,7 +291,7 @@
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">
                                             <?php 
-$savings = ((float)$dynamicPrice * 3) - ($car['weekend_rate'] * 3);
+$savings = ((float)$car['daily_rate'] * 3) - ($car['weekend_rate'] * 3);
 echo ($savings > 0) ? 'Save $' . number_format($savings, 2) : '-';
 ?>
 
@@ -308,7 +308,7 @@ echo ($savings > 0) ? 'Save $' . number_format($savings, 2) : '-';
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">
                                             <?php 
-$savings = ((float)$dynamicPrice * 7) - $car['weekly_rate'];
+$savings = ((float)$car['daily_rate'] * 7) - $car['weekly_rate'];
 echo ($savings > 0) ? 'Save $' . number_format($savings, 2) : '-';
 ?>
 
@@ -325,7 +325,7 @@ echo ($savings > 0) ? 'Save $' . number_format($savings, 2) : '-';
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">
                                             <?php 
-$savings = ((float)$dynamicPrice * 30) - $car['monthly_rate'];
+$savings = ((float)$car['daily_rate'] * 30) - $car['monthly_rate'];
 echo ($savings > 0) ? 'Save $' . number_format($savings, 2) : '-';
 ?>
 
@@ -428,11 +428,12 @@ echo ($savings > 0) ? 'Save $' . number_format($savings, 2) : '-';
             <div class="lg:col-span-1">
                 <!-- Booking Widget -->
                 <?php if ($car['status'] === 'available'): ?>
-                <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
-                    <div class="bg-blue-600 px-6 py-4">
-                        <h3 class="text-lg font-semibold text-white">Quick Booking</h3>
-                    </div>
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8 z-100" >
+                   
                     <div class="p-6">
+                    <div class="bg-gray-600 px-6 py-4">
+                        <h3 class="text-lg font-semibold text-green">Quick Booking</h3>
+                    </div>
                         <?php if (isLoggedIn()): ?>
                             <form action="index.php?page=rentals&action=create" method="POST">
                                 <input type="hidden" name="car_id" value="<?= $car['car_id'] ?>">
@@ -471,7 +472,7 @@ echo ($savings > 0) ? 'Save $' . number_format($savings, 2) : '-';
                                 <div class="mb-6">
                                     <div class="flex justify-between py-2 text-sm">
                                         <span class="text-gray-600">Daily Rate:</span>
-                                        <span class="text-gray-900 font-medium">$<?= number_format((float)$dynamicPrice, 2) ?></span>
+                                        <span class="text-gray-900 font-medium">$<?= number_format((float)$car['daily_rate'], 2) ?></span>
                                     </div>
                                     <div class="flex justify-between py-2 text-sm border-t border-gray-200">
                                         <span class="text-gray-600">Rental Days:</span>
@@ -501,7 +502,7 @@ echo ($savings > 0) ? 'Save $' . number_format($savings, 2) : '-';
                             
                             <script>
                                 // Calculate rental days and total
-                                const dailyRate = <?= $dynamicPrice ?>;
+                                const dailyRate = <?= $car['daily_rate'] ?>;
                                 const discountPercentage = <?= $promotion ? $promotion['discount_percentage'] : 0 ?>;
                                 let promoApplied = false;
                                 

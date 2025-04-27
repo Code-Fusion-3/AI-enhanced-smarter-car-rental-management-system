@@ -4,53 +4,30 @@ class AIChat {
     private $currentState = null;
     private $db;
     private $selectedCar = null;
-   
 
     public function __construct($connection) {
         $this->db = $connection;
         $this->initializeCarKeywords();
     }
-    
+
     private function initializeCarKeywords() {
-        // Fetch all car makes and models from database
         $sql = "SELECT DISTINCT make, model FROM cars";
         $result = $this->db->query($sql);
-        
         $carKeywords = [];
         while ($car = $result->fetch_assoc()) {
             $carKeywords[] = strtolower($car['make']);
             $carKeywords[] = strtolower($car['model']);
         }
-    // Update the responses array with dynamic car keywords
-    $this->responses['car_selection'] = [
-        'keywords' => array_unique($carKeywords),
-        'responses' => [
-            "The {CAR} is an excellent choice! Here are the details:\n" .
-            "- Make: {MAKE}\n" .
-            "- Model: {MODEL}\n" .
-            "- Year: {YEAR}\n" .
-            "- Daily Rate: {RATE}\n" .
-            "- Features: {FEATURES}\n" .
-            "Would you like to book it for specific dates?",
-            
-            "Great pick! The {CAR} is currently available. Details:\n" .
-            "- Make: {MAKE}\n" .
-            "- Model: {MODEL}\n" .
-            "- Year: {YEAR}\n" .
-            "- Daily Rate: {RATE}\n" .
-            "- Features: {FEATURES}\n" .
-            "When would you like to rent it?"
-        ]
-    ];
-}
+        $this->responses['car_selection']['keywords'] = array_unique($carKeywords);
+    }
 
     private $responses = [
         'greeting' => [
-            'keywords' => ['hello', 'hi', 'hey', 'hy' ,'morning', 'afternoon', 'evening'],
+            'keywords' => ['hello', 'hi', 'hey', 'morning', 'afternoon', 'evening'],
             'responses' => [
-                "Hey there! I'm your personal car rental assistant. What can I help you with today?",
-                "Welcome! Looking for the perfect car rental? I'm here to help!",
-                "Hi! Ready to find your ideal rental car?"
+                "Hello! I'm your AI assistant for car rentals. How can I assist you today?",
+                "Hi there! Ready to explore our AI-powered car rental options?",
+                "Welcome! Let me help you find the perfect car for your journey."
             ]
         ],
         'rental_process' => [
@@ -61,10 +38,10 @@ class AIChat {
             ]
         ],
         'car_selection' => [
-            'keywords' => ['toyota', 'camry', 'honda', 'cr-v', 'bmw'],
+            'keywords' => [],
             'responses' => [
-                "The {CAR} is an excellent choice! It features:\n- Automatic transmission\n- 4 doors\n- Fuel efficient\n- GPS navigation\nWould you like to book it for specific dates?",
-                "Great pick! The {CAR} is available now. It includes:\n- Full insurance\n- 24/7 roadside assistance\n- Unlimited mileage\nWhen would you like to rent it?"
+                "The {CAR} is a great choice! Here are the details:\n- Make: {MAKE}\n- Model: {MODEL}\n- Year: {YEAR}\n- Daily Rate: {RATE}\n- Features: {FEATURES}\nWould you like to proceed with booking?",
+                "Excellent pick! The {CAR} is available. Details:\n- Make: {MAKE}\n- Model: {MODEL}\n- Year: {YEAR}\n- Daily Rate: {RATE}\n- Features: {FEATURES}\nShall we start the booking process?"
             ]
         ],
         'booking_dates' => [
@@ -73,7 +50,7 @@ class AIChat {
                 "Perfect! Please select your preferred pickup date and location. We have spots available at:\n- Downtown\n- Airport\n- West Side",
                 "Excellent! Let's get your booking set up. Which pickup location works best for you?"
             ]
-            ],
+        ],
         'vehicle_types' => [
             'keywords' => ['suv', 'sedan', 'luxury', 'sports', 'electric', 'hybrid', 'type'],
             'responses' => [
@@ -108,11 +85,43 @@ class AIChat {
                 "We have multiple convenient locations across the city. Our main branch is downtown, with airport pickup available 24/7. Need directions?",
                 "Choose from any of our locations - downtown, airport, or suburban branches. Where would you prefer to pick up your rental?"
             ]
+        ],
+        'booking_process' => [
+            'keywords' => ['book', 'rent', 'reserve', 'proceed'],
+            'responses' => [
+                "Great! Please provide your preferred pickup and return dates.",
+                "Let's get started. When would you like to pick up and return the car?"
+            ]
+        ],
+        'confirm_booking' => [
+            'keywords' => ['confirm', 'yes', 'proceed', 'continue'],
+            'responses' => [
+                "Your booking is almost complete! Please confirm your details and payment method.",
+                "Perfect! Let's finalize your booking. Please review your details and proceed to payment."
+            ]
+        ],
+        'default' => [
+            'responses' => [
+                "I'm here to assist you with car rentals. Could you provide more details about what you're looking for?",
+                "Let me help you find the perfect car. What specific information do you need?"
+            ]
         ]
     ];
-    
+
     public function getResponse($query) {
         $query = strtolower($query);
+
+        // Handle follow-up for car selection
+        if ($this->currentState === 'car_selected' && strpos($query, 'yes') !== false) {
+            $this->currentState = 'booking_process';
+            return $this->getRandomResponse($this->responses['booking_process']['responses']);
+        }
+
+        // Handle booking process
+        if ($this->currentState === 'booking_process' && strpos($query, 'date') !== false) {
+            $this->currentState = 'confirm_booking';
+            return $this->getRandomResponse($this->responses['confirm_booking']['responses']);
+        }
 
         // Handle "yes" after showing cars
         if ($query === 'yes' && $this->currentState === 'showing_cars') {
@@ -142,7 +151,7 @@ class AIChat {
                 );
                 
                 $this->selectedCar = $car;
-                $this->currentState = 'booking';
+                $this->currentState = 'car_selected';
                 return $response;
             }
         }
@@ -163,6 +172,7 @@ class AIChat {
 
         // Default responses remain the same
         foreach ($this->responses as $type => $data) {
+            if ($type === 'default') continue;
             foreach ($data['keywords'] as $keyword) {
                 if (strpos($query, $keyword) !== false) {
                     return $this->getRandomResponse($data['responses']);
@@ -174,7 +184,7 @@ class AIChat {
             return "I can show you our available cars, specific models, or help you book right away. What would you like to explore?";
 
         }
-        return $this->getDefaultResponse();
+        return $this->getRandomResponse($this->responses['default']['responses']);
 
     }
 
