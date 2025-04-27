@@ -428,14 +428,15 @@ echo ($savings > 0) ? 'Save $' . number_format($savings, 2) : '-';
             <div class="lg:col-span-1">
                 <!-- Booking Widget -->
                 <?php if ($car['status'] === 'available'): ?>
-                <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8 z-100" >
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-12 z-100" >
                    
                     <div class="p-6">
-                    <div class="bg-gray-600 px-6 py-4">
-                        <h3 class="text-lg font-semibold text-green">Quick Booking</h3>
-                    </div>
+                   
                         <?php if (isLoggedIn()): ?>
                             <form action="index.php?page=rentals&action=create" method="POST">
+                            <div class="bg-gray-600 px-6 py-6">
+                        <h3 class="text-lg font-semibold text-green">Quick Booking</h3>
+                    </div>
                                 <input type="hidden" name="car_id" value="<?= $car['car_id'] ?>">
                                 
                                 <div class="mb-4">

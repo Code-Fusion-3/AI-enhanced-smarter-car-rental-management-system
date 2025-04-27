@@ -481,9 +481,6 @@ class AdminController {
         $stmt->execute();
         $maintenanceResult = $stmt->get_result();
         $maintenanceRecords = $maintenanceResult->fetch_all(MYSQLI_ASSOC);
-// Calculate dynamic price
-$dynamicPriceData = $this->car->getDynamicPrice($carId);
-$dynamicPrice = $dynamicPriceData['final_rate']; // This is what you'll display in the view
 
         
         require 'views/admin/cars/view.php';

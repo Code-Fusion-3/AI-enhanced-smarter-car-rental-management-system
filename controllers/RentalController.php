@@ -135,20 +135,20 @@ $rentals[] = $row;
         
         if ($start < $today) {
             $_SESSION['error'] = "Start date cannot be in the past.";
-            header('Location: index.php?page=rentals&action=create&car_id=' . $carId);
+            header('Location: index.php?page=cars&action=view&id=' . $carId);
             exit();
         }
         
         if ($end <= $start) {
             $_SESSION['error'] = "End date must be after start date.";
-            header('Location: index.php?page=rentals&action=create&car_id=' . $carId);
+            header('Location: index.php?page=cars&action=view&id=+' . $carId);
             exit();
         }
         
         // Check if car is available for the selected dates
         if (!$this->rental->isCarAvailable($carId, $startDate, $endDate)) {
             $_SESSION['error'] = "This car is not available for the selected dates.";
-            header('Location: index.php?page=rentals&action=create&car_id=' . $carId);
+            header('Location: index.php?page=cars&action=view&id=+' . $carId);
             exit();
         }
         
@@ -158,7 +158,7 @@ $rentals[] = $row;
             $promotionId = $this->rental->validatePromoCode($promoCode);
             if (!$promotionId) {
                 $_SESSION['error'] = "Invalid or expired promotion code.";
-                header('Location: index.php?page=rentals&action=create&car_id=' . $carId);
+                header('Location: index.php?page=cars&action=view&id=+' . $carId);
                 exit();
             }
         }
