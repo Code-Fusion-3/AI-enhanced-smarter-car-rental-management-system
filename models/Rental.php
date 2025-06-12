@@ -334,7 +334,7 @@ class Rental {
                     VALUES (?, ?, ?, NOW(), ?, ?)";
             
             $stmt = $this->db->prepare($sql);
-            $stmt->bind_param("iiisf", $rentalId, $rental['user_id'], $rental['car_id'], $returnCondition, $additionalCharges);
+            $stmt->bind_param("iiisd", $rentalId, $rental['user_id'], $rental['car_id'], $returnCondition, $additionalCharges);
             $stmt->execute();
             
             // If there are additional charges, update the total cost

@@ -593,11 +593,11 @@
             </div>
         </div>
         
-        <div class="text-center mt-8">
+        <!-- <div class="text-center mt-8">
             <a href="index.php?page=faq" class="text-blue-600 font-semibold hover:text-blue-800 transition">
                 View all FAQs <span class="ml-1">→</span>
             </a>
-        </div>
+        </div> -->
     </div>
 </div>
 

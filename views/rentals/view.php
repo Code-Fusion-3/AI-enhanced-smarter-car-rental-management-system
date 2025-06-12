@@ -254,13 +254,8 @@
             <?php endif; ?>
             
             <!-- Rental History (if completed) -->
-            <?php if($rental['status'] === 'completed'): 
-                $historyQuery = "SELECT * FROM rental_history WHERE rental_id = ?";
-                $stmt = $conn->prepare($historyQuery);
-                $stmt->bind_param("i", $rental['rental_id']);
-                $stmt->execute();
-                $historyResult = $stmt->get_result();
-                $history = $historyResult->fetch_assoc();
+            <?php if($rental['status'] === 'completed' && !empty($history)): 
+               
             ?>
                 <?php if($history): ?>
                 <div class="p-6 border-b">
@@ -356,13 +351,15 @@
                         // For approved rentals, allow payment if not already paid
                         if(empty($payment) || $payment['status'] !== 'completed'):
                         ?>
-                        <a href="index.php?page=payments&action=pay&rental_id=<?= $rental['rental_id'] ?>" 
-                           class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-                            <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
-                            </svg>
-                            Pay Now
-                        </a>
+                       <a href="index.php?page=payments&action=pay&rental_id=<?= $rental['rental_id'] ?>" 
+   class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+    <!-- Stripe SVG Icon -->
+    <svg class="-ml-1 mr-2 h-5 w-5" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="16" fill="#635BFF"/>
+        <path d="M23.5 17.5C23.5 15.57 22.13 14.88 19.97 14.41L18.97 14.2C17.97 14 17.5 13.8 17.5 13.3C17.5 12.8 18 12.5 18.8 12.5C19.67 12.5 20.17 12.7 20.5 13.5L22.3 12.7C21.83 11.57 20.83 11 18.8 11C16.97 11 15.5 11.87 15.5 13.5C15.5 15.33 17.17 15.83 18.67 16.13L19.67 16.33C20.67 16.53 21.17 16.7 21.17 17.2C21.17 17.7 20.67 18 19.67 18C18.67 18 18.17 17.7 17.83 17L16 17.8C16.5 18.93 17.67 19.5 19.67 19.5C21.5 19.5 23.5 18.63 23.5 17.5ZM13.5 11.13L11.5 11.87V19.33H13.5V11.13ZM10.5 13.5C10.5 12.67 9.83 12 9 12C8.17 12 7.5 12.67 7.5 13.5C7.5 14.33 8.17 15 9 15C9.83 15 10.5 14.33 10.5 13.5Z" fill="white"/>
+    </svg>
+    Pay Now via Stripe pay
+</a>
                         <?php
                         endif;
                         
