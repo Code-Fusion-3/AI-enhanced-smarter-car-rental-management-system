@@ -29,7 +29,7 @@ class PaymentsController {
     }
 
     public function process() {
-        \Stripe\Stripe::setApiKey(getenv('STRIPE_SECRET_KEY'));
+        \Stripe\Stripe::setApiKey($_ENV['STRIPE_SECRET_KEY']); // Replace with your Stripe secret key
 
         $token = $_POST['stripeToken'] ?? null;
         $rental_id = $_POST['rental_id'] ?? null;
