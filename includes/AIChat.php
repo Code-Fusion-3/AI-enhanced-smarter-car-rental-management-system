@@ -1,16 +1,19 @@
 <?php
-class AIChat {
+class AIChat
+{
     private $context = [];
     private $currentState = null;
     private $db;
     private $selectedCar = null;
 
-    public function __construct($connection) {
+    public function __construct($connection)
+    {
         $this->db = $connection;
         $this->initializeCarKeywords();
     }
 
-    private function initializeCarKeywords() {
+    private function initializeCarKeywords()
+    {
         $sql = "SELECT DISTINCT make, model FROM cars";
         $result = $this->db->query($sql);
         $carKeywords = [];
@@ -26,7 +29,7 @@ class AIChat {
             'keywords' => ['hello', 'hi', 'hey', 'morning', 'afternoon', 'evening'],
             'responses' => [
                 "Hello! I'm your AI assistant for car rentals. How can I assist you today?",
-                "Hi there! Ready to explore our AI-powered car rental options?",
+                "Hi there! Ready to explore our AI-Enhanced car rental options?",
                 "Welcome! Let me help you find the perfect car for your journey."
             ]
         ],
@@ -59,7 +62,7 @@ class AIChat {
             ]
         ],
         'pricing_dynamic' => [
-            'keywords' => ['price', 'pricing' ,'cost', 'rate', 'expensive', 'cheap', 'affordable'],
+            'keywords' => ['price', 'pricing', 'cost', 'rate', 'expensive', 'cheap', 'affordable'],
             'responses' => [
                 "Our smart pricing system ensures the best rates based on real-time demand. Currently, prices start at $45/day for compact cars. Would you like to see current rates for specific vehicles?",
                 "We use dynamic pricing to give you the best deals. Premium vehicles might cost more, but we often have special offers. What's your budget range?"
@@ -108,7 +111,8 @@ class AIChat {
         ]
     ];
 
-    public function getResponse($query) {
+    public function getResponse($query)
+    {
         $query = strtolower($query);
 
         // Handle follow-up for car selection
@@ -128,51 +132,53 @@ class AIChat {
             return "Perfect! Which car catches your eye? Just mention the model name and I'll share all the details.";
         }
 
-       // Check for car selection
-    foreach ($this->responses['car_selection']['keywords'] as $keyword) {
-        if (strpos($query, $keyword) !== false) {
-            // Fetch car details from database
-            $sql = "SELECT * FROM cars WHERE LOWER(make) LIKE ? OR LOWER(model) LIKE ?";
-            $searchTerm = "%$keyword%";
-            $stmt = $this->db->prepare($sql);
-            $stmt->bind_param("ss", $searchTerm, $searchTerm);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            
-            if ($car = $result->fetch_assoc()) {
-                $response = $this->getRandomResponse($this->responses['car_selection']['responses']);
-                
-                // Replace placeholders with actual car data
-                $carName = $car['make'] . ' ' . $car['model'];
-                $response = str_replace(
-                    ['{CAR}', '{MAKE}', '{MODEL}', '{YEAR}', '{RATE}', '{FEATURES}'],
-                    [$carName, $car['make'], $car['model'], $car['year'], $car['daily_rate'], $car['features']],
-                    $response
-                );
-                
-                $this->selectedCar = $car;
-                $this->currentState = 'car_selected';
-                return $response;
+        // Check for car selection
+        foreach ($this->responses['car_selection']['keywords'] as $keyword) {
+            if (strpos($query, $keyword) !== false) {
+                // Fetch car details from database
+                $sql = "SELECT * FROM cars WHERE LOWER(make) LIKE ? OR LOWER(model) LIKE ?";
+                $searchTerm = "%$keyword%";
+                $stmt = $this->db->prepare($sql);
+                $stmt->bind_param("ss", $searchTerm, $searchTerm);
+                $stmt->execute();
+                $result = $stmt->get_result();
+
+                if ($car = $result->fetch_assoc()) {
+                    $response = $this->getRandomResponse($this->responses['car_selection']['responses']);
+
+                    // Replace placeholders with actual car data
+                    $carName = $car['make'] . ' ' . $car['model'];
+                    $response = str_replace(
+                        ['{CAR}', '{MAKE}', '{MODEL}', '{YEAR}', '{RATE}', '{FEATURES}'],
+                        [$carName, $car['make'], $car['model'], $car['year'], $car['daily_rate'], $car['features']],
+                        $response
+                    );
+
+                    $this->selectedCar = $car;
+                    $this->currentState = 'car_selected';
+                    return $response;
+                }
             }
         }
-    }
 
         // Show available cars from database
         if (strpos($query, 'available') !== false || strpos($query, 'car') !== false) {
             $this->currentState = 'showing_cars';
             $sql = "SELECT make, model, daily_rate FROM cars WHERE status = 'available' ORDER BY daily_rate ASC";
             $result = $this->db->query($sql);
-            
+
             $response = "Here are our available vehicles:\n\n";
             while ($car = $result->fetch_assoc()) {
-                $response .= "🚗 {$car['make']} {$car['model']} - \${$car['daily_rate']}/day\n";   }
+                $response .= "🚗 {$car['make']} {$car['model']} - \${$car['daily_rate']}/day\n";
+            }
             $response .= "\nWhich one interests you? I can share more details about any model.";
             return $response;
         }
 
         // Default responses remain the same
         foreach ($this->responses as $type => $data) {
-            if ($type === 'default') continue;
+            if ($type === 'default')
+                continue;
             foreach ($data['keywords'] as $keyword) {
                 if (strpos($query, $keyword) !== false) {
                     return $this->getRandomResponse($data['responses']);
@@ -188,12 +194,14 @@ class AIChat {
 
     }
 
-    
-    private function getRandomResponse($responses) {
+
+    private function getRandomResponse($responses)
+    {
         return $responses[array_rand($responses)];
     }
-    
-    private function getDefaultResponse() {
+
+    private function getDefaultResponse()
+    {
         $responses = [
             "I'd be happy to help you with that. Could you tell me more about what you're looking for?",
             "Let me assist you with your car rental needs. What specific information would you like?",
@@ -201,6 +209,6 @@ class AIChat {
         ];
         return $this->getRandomResponse($responses);
     }
-   
+
 
 }

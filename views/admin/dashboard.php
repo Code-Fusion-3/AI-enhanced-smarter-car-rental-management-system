@@ -66,7 +66,7 @@
                         </div>
                         <div class="ml-4">
                             <h2 class="text-gray-600 text-sm font-medium">Total Revenue</h2>
-                            <p class="text-2xl font-semibold text-gray-800">$<?= number_format($stats['totalRevenue'], 2) ?></p>
+                            <p class="text-2xl font-semibold text-gray-800">RWF <?= number_format($stats['totalRevenue'], 2) ?></p>
                         </div>
                     </div>
                 </div>
