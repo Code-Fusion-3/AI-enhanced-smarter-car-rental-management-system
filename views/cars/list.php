@@ -331,7 +331,7 @@ function removeQueryParam($param)
                     <?php if (!empty($_GET['price'])): ?>
                     <span
                         class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        Max Price: $<?php echo htmlspecialchars($_GET['price']); ?>/day
+                        Max Price: <?= formatCurrency($_GET['price']) ?>/day
                         <a href="<?php echo removeQueryParam('price'); ?>"
                             class="ml-1 text-blue-500 hover:text-blue-700">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20"
@@ -462,7 +462,7 @@ function removeQueryParam($param)
                     <div class="flex justify-between items-center mb-4">
                         <div>
                             <span class="text-2xl font-bold text-blue-600">
-                                $<?= number_format($car['daily_rate'], 2) ?>
+                                <?= formatCurrency($car['daily_rate']) ?>
                             </span>
                             <span class="text-gray-600">/day</span>
                         </div>
@@ -676,7 +676,7 @@ function removeQueryParam($param)
                         <?php if (!empty($promotion['discount_percentage'])): ?>
                         Save <?= $promotion['discount_percentage'] ?>% on your next rental!
                         <?php elseif (!empty($promotion['discount_amount'])): ?>
-                        Save $<?= $promotion['discount_amount'] ?> on your next rental!
+                        Save <?= formatCurrency($promotion['discount_amount']) ?> on your next rental!
                         <?php endif; ?>
                     </p>
                     <p class="mt-2 text-sm text-blue-100">
@@ -751,7 +751,7 @@ function removeQueryParam($param)
                     </h3>
 
                     <p class="text-2xl font-bold text-blue-600 mb-4">
-                        $<?= number_format($car['daily_rate'], 2) ?> <span class="text-sm text-gray-600">/day</span>
+                        <?= formatCurrency($car['daily_rate']) ?> <span class="text-sm text-gray-600">/day</span>
                     </p>
 
                     <div class="flex justify-between">

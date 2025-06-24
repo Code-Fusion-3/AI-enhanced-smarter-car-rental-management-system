@@ -133,7 +133,7 @@
                         <div class="flex justify-between items-center mb-6">
                             <div>
                                 <span class="text-3xl font-bold text-blue-600">
-                                    $<?= number_format((float)$car['daily_rate'], 2) ?>
+                                    <?= formatCurrency((float)$car['daily_rate']) ?>
                                 </span>
                                 <span class="text-gray-600">/day</span>
                                 
@@ -260,7 +260,7 @@
                                                 Daily
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                $<?= number_format((float)$car['daily_rate'], 2) ?>
+                                                <?= formatCurrency((float)$car['daily_rate']) ?>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                 -
@@ -272,14 +272,13 @@
                                                 Weekend (Fri-Sun)
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                $<?= number_format($car['weekend_rate'], 2) ?>
+                                                <?= !empty($car['weekend_rate']) ? formatCurrency($car['weekend_rate']) : 'N/A' ?>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">
-                                            <?php 
-$savings = ((float)$car['daily_rate'] * 3) - ($car['weekend_rate'] * 3);
-echo ($savings > 0) ? 'Save $' . number_format($savings, 2) : '-';
-?>
-
+                                                <?php 
+                                                $savings = ((float)$car['daily_rate'] * 3) - ($car['weekend_rate'] * 3);
+                                                echo ($savings > 0) ? 'Save ' . formatCurrency($savings) : '-';
+                                                ?>
                                             </td>
                                         </tr>
                                         <?php endif; ?>
@@ -289,14 +288,13 @@ echo ($savings > 0) ? 'Save $' . number_format($savings, 2) : '-';
                                                 Weekly
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                $<?= number_format($car['weekly_rate'], 2) ?>
+                                                <?= !empty($car['weekly_rate']) ? formatCurrency($car['weekly_rate']) : 'N/A' ?>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">
-                                            <?php 
-$savings = ((float)$car['daily_rate'] * 7) - $car['weekly_rate'];
-echo ($savings > 0) ? 'Save $' . number_format($savings, 2) : '-';
-?>
-
+                                                <?php 
+                                                $savings = ((float)$car['daily_rate'] * 7) - $car['weekly_rate'];
+                                                echo ($savings > 0) ? 'Save ' . formatCurrency($savings) : '-';
+                                                ?>
                                             </td>
                                         </tr>
                                         <?php endif; ?>
@@ -306,14 +304,13 @@ echo ($savings > 0) ? 'Save $' . number_format($savings, 2) : '-';
                                                 Monthly
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                $<?= number_format($car['monthly_rate'], 2) ?>
+                                                <?= !empty($car['monthly_rate']) ? formatCurrency($car['monthly_rate']) : 'N/A' ?>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">
-                                            <?php 
-$savings = ((float)$car['daily_rate'] * 30) - $car['monthly_rate'];
-echo ($savings > 0) ? 'Save $' . number_format($savings, 2) : '-';
-?>
-
+                                                <?php 
+                                                $savings = ((float)$car['daily_rate'] * 30) - $car['monthly_rate'];
+                                                echo ($savings > 0) ? 'Save ' . formatCurrency($savings) : '-';
+                                                ?>
                                             </td>
                                         </tr>
                                         <?php endif; ?>
@@ -458,7 +455,7 @@ echo ($savings > 0) ? 'Save $' . number_format($savings, 2) : '-';
                                 <div class="mb-6">
                                     <div class="flex justify-between py-2 text-sm">
                                         <span class="text-gray-600">Daily Rate:</span>
-                                        <span class="text-gray-900 font-medium">$<?= number_format((float)$car['daily_rate'], 2) ?></span>
+                                        <span class="text-gray-900 font-medium"><?= formatCurrency((float)$car['daily_rate']) ?></span>
                                     </div>
                                     <div class="flex justify-between py-2 text-sm border-t border-gray-200">
                                         <span class="text-gray-600">Rental Days:</span>
@@ -466,17 +463,17 @@ echo ($savings > 0) ? 'Save $' . number_format($savings, 2) : '-';
                                     </div>
                                     <div class="flex justify-between py-2 text-sm border-t border-gray-200">
                                         <span class="text-gray-600">Subtotal:</span>
-                                        <span class="text-gray-900 font-medium" id="subtotal">$0.00</span>
+                                        <span class="text-gray-900 font-medium" id="subtotal"><?= formatCurrency(0) ?></span>
                                     </div>
                                     <?php if ($promotion): ?>
                                     <div class="flex justify-between py-2 text-sm border-t border-gray-200 text-green-600" id="discount-row" style="display: none;">
                                         <span>Discount (<?= $promotion['discount_percentage'] ?>%):</span>
-                                        <span id="discount-amount">-$0.00</span>
+                                        <span id="discount-amount"><?= formatCurrency(0) ?></span>
                                     </div>
                                     <?php endif; ?>
                                     <div class="flex justify-between py-3 text-base font-semibold border-t border-gray-200">
                                         <span class="text-gray-900">Total:</span>
-                                        <span class="text-blue-600" id="total">$0.00</span>
+                                        <span class="text-blue-600" id="total"><?= formatCurrency(0) ?></span>
                                     </div>
                                 </div>
                                 
@@ -503,18 +500,18 @@ echo ($savings > 0) ? 'Save $' . number_format($savings, 2) : '-';
                                         document.getElementById('rental-days').textContent = diffDays;
                                         
                                         const subtotal = dailyRate * diffDays;
-                                        document.getElementById('subtotal').textContent = '$' + subtotal.toFixed(2);
+                                        document.getElementById('subtotal').textContent = '<?= formatCurrency(0) ?>' + subtotal.toFixed(2);
                                         
                                         let total = subtotal;
                                         
                                         if (promoApplied && discountPercentage > 0) {
                                             const discountAmount = subtotal * (discountPercentage / 100);
-                                            document.getElementById('discount-amount').textContent = '-$' + discountAmount.toFixed(2);
+                                            document.getElementById('discount-amount').textContent = '<?= formatCurrency(0) ?>' + discountAmount.toFixed(2);
                                             document.getElementById('discount-row').style.display = 'flex';
                                             total = subtotal - discountAmount;
                                         }
                                         
-                                        document.getElementById('total').textContent = '$' + total.toFixed(2);
+                                        document.getElementById('total').textContent = '<?= formatCurrency(0) ?>' + total.toFixed(2);
                                     }
                                 }
                                 
@@ -564,7 +561,7 @@ echo ($savings > 0) ? 'Save $' . number_format($savings, 2) : '-';
                                             <?= htmlspecialchars($similarCar['make'] . ' ' . $similarCar['model'] . ' ' . $similarCar['year']) ?>
                                         </h4>
                                         <p class="text-sm text-gray-500">
-                                            $<?= number_format($similarCar['daily_rate'], 2) ?> / day
+                                            <?= formatCurrency($similarCar['daily_rate']) ?> / day
                                         </p>
                                         <div class="mt-1">
                                             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
@@ -616,7 +613,7 @@ echo ($savings > 0) ? 'Save $' . number_format($savings, 2) : '-';
                                 </p>
                                 <?php if ($record['cost']): ?>
                                 <p class="mt-1 text-sm text-gray-500">
-                                    Cost: $<?= number_format($record['cost'], 2) ?>
+                                    Cost: <?= formatCurrency($record['cost']) ?>
                                 </p>
                                 <?php endif; ?>
                             </div>

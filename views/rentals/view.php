@@ -154,7 +154,7 @@
                         <div>
                             <div class="flex items-center mb-2">
                                 <h4 class="text-sm font-medium text-gray-500 mr-2">Daily Rate:</h4>
-                                <p class="text-gray-900">$<?= number_format($rental['daily_rate'], 2) ?>/day</p>
+                                <p class="text-gray-900"><?= formatCurrency($rental['daily_rate']) ?>/day</p>
                             </div>
                             
                             <div class="flex items-center mb-2">
@@ -170,7 +170,7 @@
                                     <?php if(!empty($rental['discount_percentage'])): ?>
                                         (<?= $rental['discount_percentage'] ?>% off)
                                     <?php elseif(!empty($rental['discount_amount'])): ?>
-                                        ($<?= number_format($rental['discount_amount'], 2) ?> off)
+                                        (<?= formatCurrency($rental['discount_amount']) ?> off)
                                     <?php endif; ?>
                                 </span>
                             </div>
@@ -179,21 +179,21 @@
                             <?php if(!empty($rental['discount_amount']) && $rental['discount_amount'] > 0): ?>
                             <div class="flex items-center mb-2">
                                 <h4 class="text-sm font-medium text-gray-500 mr-2">Discount:</h4>
-                                <p class="text-green-600">-$<?= number_format($rental['discount_amount'], 2) ?></p>
+                                <p class="text-green-600">-<?= formatCurrency($rental['discount_amount']) ?></p>
                             </div>
                             <?php endif; ?>
                             
                             <?php if(!empty($rental['additional_charges']) && $rental['additional_charges'] > 0): ?>
                             <div class="flex items-center mb-2">
                                 <h4 class="text-sm font-medium text-gray-500 mr-2">Additional Charges:</h4>
-                                <p class="text-red-600">+$<?= number_format($rental['additional_charges'], 2) ?></p>
+                                <p class="text-red-600">+<?= formatCurrency($rental['additional_charges']) ?></p>
                             </div>
                             <?php endif; ?>
                         </div>
                         
                         <div class="mt-4 md:mt-0 md:text-right">
                             <h4 class="text-sm font-medium text-gray-500">Total Cost</h4>
-                            <p class="text-2xl font-bold text-blue-600">$<?= number_format($rental['total_cost'], 2) ?></p>
+                            <p class="text-2xl font-bold text-blue-600"><?= formatCurrency($rental['total_cost']) ?></p>
                             
                            
                             
@@ -279,7 +279,7 @@
                         <?php if(!empty($history['additional_charges']) && $history['additional_charges'] > 0): ?>
                         <div class="bg-gray-50 p-4 rounded-lg">
                             <h4 class="text-sm font-medium text-gray-500">Additional Charges</h4>
-                            <p class="text-red-600 font-medium mt-1">$<?= number_format($history['additional_charges'], 2) ?></p>
+                            <p class="text-red-600 font-medium mt-1"><?= formatCurrency($history['additional_charges']) ?></p>
                         </div>
                         <?php endif; ?>
                         
@@ -492,7 +492,7 @@
                                     </div>
                                     <div class="ml-2 flex-shrink-0 flex">
                                         <p class="text-sm text-gray-500">
-                                            $<?= number_format($related['total_cost'], 2) ?>
+                                            <?= formatCurrency($related['total_cost']) ?>
                                         </p>
                                     </div>
                                 </div>

@@ -179,7 +179,7 @@
                                     <?php endif; ?>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <?= !empty($record['cost']) ? '$' . number_format($record['cost'], 2) : '-' ?>
+                                    <?= !empty($record['cost']) ? formatCurrency($record['cost']) : '-' ?>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span

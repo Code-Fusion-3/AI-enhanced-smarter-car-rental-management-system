@@ -100,79 +100,79 @@
             if ($result && $result->num_rows > 0) {
                 while ($car = $result->fetch_assoc()) {
                     ?>
-                    <div
-                        class="bg-white rounded-xl shadow-lg overflow-hidden transition-transform hover:scale-105 hover:shadow-xl">
-                        <div class="h-48 bg-gray-200 relative">
-                            <?php if ($car['image_url']): ?>
-                                <img src="<?php echo $car['image_url']; ?>" alt="<?php echo $car['make'] . ' ' . $car['model']; ?>"
-                                    class="w-full h-full object-cover">
-                            <?php else: ?>
-                                <div class="flex items-center justify-center h-full bg-blue-50">
-                                    <svg class="w-24 h-24 text-blue-300" viewBox="0 0 24 24" fill="none"
-                                        xmlns="http://www.w3.org/2000/svg">
-                                        <path
-                                            d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"
-                                            fill="currentColor" />
-                                    </svg>
-                                </div>
-                            <?php endif; ?>
-                            <?php if (isset($car['category_name'])): ?>
-                                <span
-                                    class="absolute top-2 right-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full"><?php echo $car['category_name']; ?></span>
-                            <?php endif; ?>
-                        </div>
-                        <div class="p-6">
-                            <h3 class="text-xl font-bold text-gray-800"><?php echo $car['make'] . ' ' . $car['model']; ?></h3>
-                            <div class="flex items-center text-gray-600 text-sm mt-2 space-x-4">
-                                <span class="flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24"
-                                        stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                    <?php echo $car['year']; ?>
-                                </span>
-                                <?php if (isset($car['transmission'])): ?>
-                                    <span class="flex items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24"
-                                            stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                                        </svg>
-                                        <?php echo ucfirst($car['transmission']); ?>
-                                    </span>
-                                <?php endif; ?>
-                                <?php if (isset($car['fuel_type'])): ?>
-                                    <span class="flex items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24"
-                                            stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                        </svg>
-                                        <?php echo ucfirst($car['fuel_type']); ?>
-                                    </span>
-                                <?php endif; ?>
-                            </div>
-                            <div class="mt-4 flex justify-between items-center">
-                                <div>
-                                    <span class="text-2xl font-bold text-blue-600">$<?php echo $car['daily_rate']; ?></span>
-                                    <span class="text-gray-500 text-sm">/day</span>
-                                </div>
-                                <a href="index.php?page=cars&action=view&id=<?php echo $car['car_id']; ?>"
-                                    class="bg-blue-100 text-blue-600 px-4 py-2 rounded-lg font-medium hover:bg-blue-200 transition">
-                                    View Details
-                                </a>
-                            </div>
-                        </div>
+            <div
+                class="bg-white rounded-xl shadow-lg overflow-hidden transition-transform hover:scale-105 hover:shadow-xl">
+                <div class="h-48 bg-gray-200 relative">
+                    <?php if ($car['image_url']): ?>
+                    <img src="<?php echo $car['image_url']; ?>" alt="<?php echo $car['make'] . ' ' . $car['model']; ?>"
+                        class="w-full h-full object-cover">
+                    <?php else: ?>
+                    <div class="flex items-center justify-center h-full bg-blue-50">
+                        <svg class="w-24 h-24 text-blue-300" viewBox="0 0 24 24" fill="none"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"
+                                fill="currentColor" />
+                        </svg>
                     </div>
-                    <?php
+                    <?php endif; ?>
+                    <?php if (isset($car['category_name'])): ?>
+                    <span
+                        class="absolute top-2 right-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full"><?php echo $car['category_name']; ?></span>
+                    <?php endif; ?>
+                </div>
+                <div class="p-6">
+                    <h3 class="text-xl font-bold text-gray-800"><?php echo $car['make'] . ' ' . $car['model']; ?></h3>
+                    <div class="flex items-center text-gray-600 text-sm mt-2 space-x-4">
+                        <span class="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <?php echo $car['year']; ?>
+                        </span>
+                        <?php if (isset($car['transmission'])): ?>
+                        <span class="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                            </svg>
+                            <?php echo ucfirst($car['transmission']); ?>
+                        </span>
+                        <?php endif; ?>
+                        <?php if (isset($car['fuel_type'])): ?>
+                        <span class="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            <?php echo ucfirst($car['fuel_type']); ?>
+                        </span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="mt-4 flex justify-between items-center">
+                        <div>
+                            <span class="text-2xl font-bold text-blue-600">RWF <?php echo $car['daily_rate']; ?></span>
+                            <span class="text-gray-500 text-sm">/day</span>
+                        </div>
+                        <a href="index.php?page=cars&action=view&id=<?php echo $car['car_id']; ?>"
+                            class="bg-blue-100 text-blue-600 px-4 py-2 rounded-lg font-medium hover:bg-blue-200 transition">
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <?php
                 }
             } else {
                 ?>
-                <div class="col-span-3 text-center py-8">
-                    <p class="text-gray-500">No cars available at the moment. Please check back later.</p>
-                </div>
-                <?php
+            <div class="col-span-3 text-center py-8">
+                <p class="text-gray-500">No cars available at the moment. Please check back later.</p>
+            </div>
+            <?php
             }
             ?>
         </div>
@@ -373,39 +373,39 @@
                     if ($result && $result->num_rows > 0) {
                         while ($promo = $result->fetch_assoc()) {
                             ?>
-                            <div
-                                class="bg-white bg-opacity-10 backdrop-blur-sm rounded-lg p-4 mb-4 border border-blue-300 border-opacity-30">
-                                <div class="flex justify-between items-center">
-                                    <div>
-                                        <span class="text-yellow-300 font-bold"><?php echo $promo['code']; ?></span>
-                                        <h3 class="text-white font-semibold"><?php echo $promo['description']; ?></h3>
-                                    </div>
-                                    <div class="text-right">
-                                        <?php if ($promo['discount_percentage']): ?>
-                                            <span
-                                                class="text-2xl font-bold text-white"><?php echo $promo['discount_percentage']; ?>%</span>
-                                            <span class="text-blue-200 block text-sm">OFF</span>
-                                        <?php elseif ($promo['discount_amount']): ?>
-                                            <span
-                                                class="text-2xl font-bold text-white">$<?php echo $promo['discount_amount']; ?></span>
-                                            <span class="text-blue-200 block text-sm">OFF</span>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                                <div class="mt-2 text-sm text-blue-200">
-                                    Valid until: <?php echo date('M d, Y', strtotime($promo['end_date'])); ?>
-                                </div>
+                    <div
+                        class="bg-white bg-opacity-10 backdrop-blur-sm rounded-lg p-4 mb-4 border border-blue-300 border-opacity-30">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <span class="text-yellow-300 font-bold"><?php echo $promo['code']; ?></span>
+                                <h3 class="text-white font-semibold"><?php echo $promo['description']; ?></h3>
                             </div>
-                            <?php
+                            <div class="text-right">
+                                <?php if ($promo['discount_percentage']): ?>
+                                <span
+                                    class="text-2xl font-bold text-white"><?php echo $promo['discount_percentage']; ?>%</span>
+                                <span class="text-blue-200 block text-sm">OFF</span>
+                                <?php elseif ($promo['discount_amount']): ?>
+                                <span
+                                    class="text-2xl font-bold text-white">$<?php echo $promo['discount_amount']; ?></span>
+                                <span class="text-blue-200 block text-sm">OFF</span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-sm text-blue-200">
+                            Valid until: <?php echo date('M d, Y', strtotime($promo['end_date'])); ?>
+                        </div>
+                    </div>
+                    <?php
                         }
                     } else {
                         ?>
-                        <div
-                            class="bg-white bg-opacity-10 backdrop-blur-sm rounded-lg p-4 mb-4 border border-blue-300 border-opacity-30">
-                            <h3 class="text-white font-semibold">No active promotions at the moment</h3>
-                            <p class="text-blue-200 text-sm mt-1">Check back soon for new offers!</p>
-                        </div>
-                        <?php
+                    <div
+                        class="bg-white bg-opacity-10 backdrop-blur-sm rounded-lg p-4 mb-4 border border-blue-300 border-opacity-30">
+                        <h3 class="text-white font-semibold">No active promotions at the moment</h3>
+                        <p class="text-blue-200 text-sm mt-1">Check back soon for new offers!</p>
+                    </div>
+                    <?php
                     }
                     ?>
 
@@ -600,64 +600,65 @@
                     if ($result && $result->num_rows > 0) {
                         while ($category = $result->fetch_assoc()) {
                             ?>
-                            <a href="index.php?page=cars&category=<?php echo $category['category_id']; ?>"
-                                class="bg-white rounded-xl shadow-md p-6 text-center hover:shadow-lg transition transform hover:-translate-y-1">
-                                <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <?php if ($category['name'] == 'Economy'): ?>
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none"
-                                            viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                    <?php elseif ($category['name'] == 'Compact'): ?>
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none"
-                                            viewBox="0 0 24 24" stroke="currentColor">
-                                            <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
-                                        </svg>
-                                    <?php elseif ($category['name'] == 'Midsize'): ?>
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none"
-                                            viewBox="0 0 24 24" stroke="currentColor">
-                                            <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
-                                        </svg>
-                                    <?php elseif ($category['name'] == 'SUV'): ?>
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none"
-                                            viewBox="0 0 24 24" stroke="currentColor">
-                                            <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
-                                        </svg>
-                                    <?php elseif ($category['name'] == 'Luxury'): ?>
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none"
-                                            viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
-                                        </svg>
-                                    <?php else: ?>
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none"
-                                            viewBox="0 0 24 24" stroke="currentColor">
-                                            <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
-                                        </svg>
-                                    <?php endif; ?>
-                                </div>
-                                <h3 class="text-lg font-semibold text-gray-800"><?php echo $category['name']; ?></h3>
-                                <p class="text-sm text-gray-600 mt-1">
-                                    <?php echo substr($category['description'], 0, 60); ?>        <?php echo (strlen($category['description']) > 60) ? '...' : ''; ?>
-                                </p>
-                            </a>
-                            <?php
+                    <a href="index.php?page=cars&category=<?php echo $category['category_id']; ?>"
+                        class="bg-white rounded-xl shadow-md p-6 text-center hover:shadow-lg transition transform hover:-translate-y-1">
+                        <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <?php if ($category['name'] == 'Economy'): ?>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <?php elseif ($category['name'] == 'Compact'): ?>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+                            </svg>
+                            <?php elseif ($category['name'] == 'Midsize'): ?>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+                            </svg>
+                            <?php elseif ($category['name'] == 'SUV'): ?>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+                            </svg>
+                            <?php elseif ($category['name'] == 'Luxury'): ?>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+                            </svg>
+                            <?php else: ?>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+                            </svg>
+                            <?php endif; ?>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800"><?php echo $category['name']; ?></h3>
+                        <p class="text-sm text-gray-600 mt-1">
+                            <?php echo substr($category['description'], 0, 60); ?>
+                            <?php echo (strlen($category['description']) > 60) ? '...' : ''; ?>
+                        </p>
+                    </a>
+                    <?php
                         }
                     } else {
                         ?>
-                        <div class="col-span-5 text-center py-8">
-                            <p class="text-gray-500">No categories available at the moment.</p>
-                        </div>
-                        <?php
+                    <div class="col-span-5 text-center py-8">
+                        <p class="text-gray-500">No categories available at the moment.</p>
+                    </div>
+                    <?php
                     }
                     ?>
                 </div>
@@ -732,41 +733,41 @@
 
     <!-- Add custom styles for animations -->
     <style>
-        @keyframes float {
-            0% {
-                transform: translateY(0px);
-            }
-
-            50% {
-                transform: translateY(-10px);
-            }
-
-            100% {
-                transform: translateY(0px);
-            }
+    @keyframes float {
+        0% {
+            transform: translateY(0px);
         }
 
-        @keyframes float-slow {
-            0% {
-                transform: translateY(0px) rotate(10deg);
-            }
-
-            50% {
-                transform: translateY(-20px) rotate(-5deg);
-            }
-
-            100% {
-                transform: translateY(0px) rotate(10deg);
-            }
+        50% {
+            transform: translateY(-10px);
         }
 
-        .animate-float {
-            animation: float 3s ease-in-out infinite;
+        100% {
+            transform: translateY(0px);
+        }
+    }
+
+    @keyframes float-slow {
+        0% {
+            transform: translateY(0px) rotate(10deg);
         }
 
-        .animate-float-slow {
-            animation: float-slow 6s ease-in-out infinite;
+        50% {
+            transform: translateY(-20px) rotate(-5deg);
         }
+
+        100% {
+            transform: translateY(0px) rotate(10deg);
+        }
+    }
+
+    .animate-float {
+        animation: float 3s ease-in-out infinite;
+    }
+
+    .animate-float-slow {
+        animation: float-slow 6s ease-in-out infinite;
+    }
     </style>
 
     <?php require 'views/layouts/footer.php'; ?>
