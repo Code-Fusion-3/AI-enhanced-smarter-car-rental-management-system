@@ -18,6 +18,9 @@
                             class="bg-blue-500 text-white px-4 py-2 rounded-md <?= $reportType === 'maintenance' ? 'bg-blue-700' : '' ?>">Maintenance</a>
                         <a href="index.php?page=admin&action=reports&type=customer"
                             class="bg-blue-500 text-white px-4 py-2 rounded-md <?= $reportType === 'customer' ? 'bg-blue-700' : '' ?>">Customer</a>
+                        <button id="download-pdf"
+                            class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">Download
+                            PDF</button>
                     </div>
                 </div>
 
@@ -184,6 +187,8 @@
 
             <!-- Include Chart.js -->
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
             <script>
                 // Revenue Chart
                 const ctx = document.getElementById('revenueChart').getContext('2d');
@@ -244,5 +249,68 @@
                             intersect: false
                         }
                     }
+                });
+
+                document.getElementById('download-pdf').addEventListener('click', function () {
+                    const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
+                    let y = 15;
+                    pdf.setFontSize(18);
+                    pdf.text('Revenue Report', 105, y, { align: 'center' });
+                    y += 10;
+                    pdf.setFontSize(12);
+                    pdf.text('Date: ' + new Date().toLocaleDateString(), 15, y);
+                    y += 10;
+                    // Summary
+                    pdf.setFontSize(14);
+                    pdf.text('Summary', 15, y);
+                    y += 8;
+                    pdf.setFontSize(12);
+                    pdf.text('Total Revenue: <?= formatCurrency($totals['total_revenue']) ?>', 15, y);
+                    y += 7;
+                    pdf.text('Total Rentals: <?= $totals['total_rentals'] ?>', 15, y);
+                    y += 7;
+                    pdf.text('Average Rental Value: <?= formatCurrency($totals['average_rental']) ?>', 15, y);
+                    y += 10;
+                    // Table: Revenue by Category
+                    pdf.setFontSize(14);
+                    pdf.text('Revenue by Category', 15, y);
+                    y += 8;
+                    pdf.setFontSize(10);
+                    pdf.text('Category', 15, y);
+                    pdf.text('Revenue', 60, y);
+                    pdf.text('Rentals', 100, y);
+                    pdf.text('Avg. Value', 130, y);
+                    pdf.text('% of Total', 160, y);
+                    y += 6;
+                    <?php foreach ($categoryData as $category): ?>
+                        pdf.text('<?= htmlspecialchars($category['category']) ?>', 15, y);
+                        pdf.text('<?= formatCurrency($category['revenue']) ?>', 60, y);
+                        pdf.text('<?= $category['rentals'] ?>', 100, y);
+                        pdf.text('<?= formatCurrency($category['revenue'] / $category['rentals']) ?>', 130, y);
+                        pdf.text('<?= number_format(($category['revenue'] / $totals['total_revenue']) * 100, 1) ?>%', 160, y);
+                        y += 6;
+                    <?php endforeach; ?>
+                    y += 6;
+                    // Table: Daily Revenue Data (first 10 for brevity)
+                    pdf.setFontSize(14);
+                    pdf.text('Sample Daily Revenue Data', 15, y);
+                    y += 8;
+                    pdf.setFontSize(10);
+                    pdf.text('Date', 15, y);
+                    pdf.text('Revenue', 60, y);
+                    pdf.text('Rentals', 100, y);
+                    pdf.text('Avg. Value', 130, y);
+                    y += 6;
+                    <?php $count = 0;
+                    foreach ($revenueData as $data):
+                        if ($count++ >= 10)
+                            break; ?>
+                        pdf.text('<?= date('M d, Y', strtotime($data['date'])) ?>', 15, y);
+                        pdf.text('<?= formatCurrency($data['daily_revenue']) ?>', 60, y);
+                        pdf.text('<?= $data['rental_count'] ?>', 100, y);
+                        pdf.text('<?= formatCurrency($data['daily_revenue'] / $data['rental_count']) ?>', 130, y);
+                        y += 6;
+                    <?php endforeach; ?>
+                    pdf.save('revenue-report.pdf');
                 });
             </script>

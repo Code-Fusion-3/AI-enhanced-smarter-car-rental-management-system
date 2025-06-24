@@ -17,6 +17,9 @@
                             class="bg-blue-500 text-white px-4 py-2 rounded-md <?= $reportType === 'maintenance' ? 'bg-blue-700' : '' ?>">Maintenance</a>
                         <a href="index.php?page=admin&action=reports&type=customer"
                             class="bg-blue-500 text-white px-4 py-2 rounded-md <?= $reportType === 'customer' ? 'bg-blue-700' : '' ?>">Customer</a>
+                        <button id="download-pdf"
+                            class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">Download
+                            PDF</button>
                     </div>
                 </div>
 
@@ -73,7 +76,8 @@
                     <div class="bg-white rounded-lg shadow-md p-6">
                         <h2 class="text-lg font-semibold text-gray-700 mb-2">Avg. Cost per Record</h2>
                         <p class="text-3xl font-bold text-blue-600">
-                            <?= formatCurrency($totalMaintenance > 0 ? ($totalCost / $totalMaintenance) : 0) ?></p>
+                            <?= formatCurrency($totalMaintenance > 0 ? ($totalCost / $totalMaintenance) : 0) ?>
+                        </p>
                         <p class="text-sm text-gray-500 mt-1">Average maintenance cost</p>
                     </div>
                 </div>
@@ -274,126 +278,88 @@
 
             <!-- Include Chart.js -->
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
             <script>
-                // Maintenance Type Chart
-                const typeCtx = document.getElementById('maintenanceTypeChart').getContext('2d');
-
-                // Prepare data for maintenance type chart
-                const maintenanceTypes = <?= json_encode(array_map(function ($type) {
-                    return ucfirst($type['maintenance_type']); }, $typeData)) ?>;
-                const typeCounts = <?= json_encode(array_column($typeData, 'count')) ?>;
-                const typeCosts = <?= json_encode(array_column($typeData, 'total_cost')) ?>;
-
-                const maintenanceTypeChart = new Chart(typeCtx, {
-                    type: 'pie',
-                    data: {
-                        labels: maintenanceTypes,
-                        datasets: [{
-                            data: typeCosts,
-                            backgroundColor: [
-                                'rgba(54, 162, 235, 0.7)',
-                                'rgba(255, 99, 132, 0.7)',
-                                'rgba(255, 206, 86, 0.7)',
-                                'rgba(75, 192, 192, 0.7)',
-                                'rgba(153, 102, 255, 0.7)'
-                            ],
-                            borderColor: [
-                                'rgba(54, 162, 235, 1)',
-                                'rgba(255, 99, 132, 1)',
-                                'rgba(255, 206, 86, 1)',
-                                'rgba(75, 192, 192, 1)',
-                                'rgba(153, 102, 255, 1)'
-                            ],
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'right',
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function (context) {
-                                        const label = context.label || '';
-                                        const value = context.raw || 0;
-                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                        const percentage = Math.round((value / total) * 100);
-                                        return `${label}: $${value.toFixed(2)} (${percentage}%)`;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-
-                // Car Maintenance Chart
-                const carCtx = document.getElementById('carMaintenanceChart').getContext('2d');
-
-                // Prepare data for car maintenance chart
-                const carLabels = <?= json_encode(array_map(function ($car) {
-                    return $car['make'] . ' ' . $car['model']; }, $carData)) ?>;
-                const carCosts = <?= json_encode(array_column($carData, 'total_cost')) ?>;
-                const carCounts = <?= json_encode(array_column($carData, 'maintenance_count')) ?>;
-
-                const carMaintenanceChart = new Chart(carCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: carLabels,
-                        datasets: [
-                            {
-                                label: 'Total Cost ($)',
-                                data: carCosts,
-                                backgroundColor: 'rgba(59, 130, 246, 0.5)',
-                                borderColor: 'rgba(59, 130, 246, 1)',
-                                borderWidth: 1,
-                                yAxisID: 'y'
-                            },
-                            {
-                                label: 'Maintenance Count',
-                                data: carCounts,
-                                type: 'line',
-                                backgroundColor: 'rgba(220, 38, 38, 0.2)',
-                                borderColor: 'rgba(220, 38, 38, 1)',
-                                borderWidth: 2,
-                                pointBackgroundColor: 'rgba(220, 38, 38, 1)',
-                                pointRadius: 3,
-                                yAxisID: 'y1'
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                type: 'linear',
-                                position: 'left',
-                                title: {
-                                    display: true,
-                                    text: 'Total Cost ($)'
-                                }
-                            },
-                            y1: {
-                                beginAtZero: true,
-                                type: 'linear',
-                                position: 'right',
-                                grid: {
-                                    drawOnChartArea: false
-                                },
-                                title: {
-                                    display: true,
-                                    text: 'Maintenance Count'
-                                }
-                            }
-                        },
-                        interaction: {
-                            mode: 'index',
-                            intersect: false
-                        }
-                    }
+                document.getElementById('download-pdf').addEventListener('click', function () {
+                    const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
+                    let y = 15;
+                    pdf.setFontSize(18);
+                    pdf.text('Maintenance Report', 105, y, { align: 'center' });
+                    y += 10;
+                    pdf.setFontSize(12);
+                    pdf.text('Date: ' + new Date().toLocaleDateString(), 15, y);
+                    y += 10;
+                    // Summary
+                    pdf.setFontSize(14);
+                    pdf.text('Summary', 15, y);
+                    y += 8;
+                    pdf.setFontSize(12);
+                    pdf.text('Total Maintenance: <?= $totalMaintenance ?>', 15, y);
+                    y += 7;
+                    pdf.text('Total Cost: <?= formatCurrency($totalCost ?? 0) ?>', 15, y);
+                    y += 7;
+                    pdf.text('Completion Rate: <?= number_format($completionRate ?? 0, 1) ?>%', 15, y);
+                    y += 7;
+                    pdf.text('Avg. Cost per Record: <?= formatCurrency($totalMaintenance > 0 ? ($totalCost / $totalMaintenance) : 0) ?>', 15, y);
+                    y += 10;
+                    // Table: Maintenance by Type
+                    pdf.setFontSize(14);
+                    pdf.text('Maintenance by Type', 15, y);
+                    y += 8;
+                    pdf.setFontSize(10);
+                    pdf.text('Type', 15, y);
+                    pdf.text('Count', 60, y);
+                    pdf.text('Total Cost', 90, y);
+                    pdf.text('Avg. Cost', 140, y);
+                    y += 6;
+                    <?php foreach ($typeData as $type): ?>
+                        pdf.text('<?= ucfirst(htmlspecialchars($type['maintenance_type'])) ?>', 15, y);
+                        pdf.text('<?= $type['count'] ?>', 60, y);
+                        pdf.text('<?= formatCurrency($type['total_cost'] ?? 0) ?>', 90, y);
+                        pdf.text('<?= formatCurrency($type['average_cost'] ?? 0) ?>', 140, y);
+                        y += 6;
+                    <?php endforeach; ?>
+                    y += 6;
+                    // Table: Top Maintenance Costs by Car
+                    pdf.setFontSize(14);
+                    pdf.text('Top Maintenance Costs by Car', 15, y);
+                    y += 8;
+                    pdf.setFontSize(10);
+                    pdf.text('Vehicle', 15, y);
+                    pdf.text('Count', 60, y);
+                    pdf.text('Total Cost', 90, y);
+                    pdf.text('Avg. Cost', 140, y);
+                    y += 6;
+                    <?php foreach ($carData as $car): ?>
+                        pdf.text('<?= htmlspecialchars($car['make'] . ' ' . $car['model']) ?>', 15, y);
+                        pdf.text('<?= $car['maintenance_count'] ?>', 60, y);
+                        pdf.text('<?= formatCurrency($car['total_cost'] ?? 0) ?>', 90, y);
+                        pdf.text('<?= formatCurrency($car['maintenance_count'] > 0 ? ($car['total_cost'] / $car['maintenance_count']) : 0) ?>', 140, y);
+                        y += 6;
+                    <?php endforeach; ?>
+                    y += 6;
+                    // Table: Maintenance Records (first 10 for brevity)
+                    pdf.setFontSize(14);
+                    pdf.text('Sample Maintenance Records', 15, y);
+                    y += 8;
+                    pdf.setFontSize(10);
+                    pdf.text('Vehicle', 15, y);
+                    pdf.text('Type', 60, y);
+                    pdf.text('Cost', 100, y);
+                    pdf.text('Date', 130, y);
+                    pdf.text('Status', 160, y);
+                    y += 6;
+                    <?php $count = 0;
+                    foreach ($maintenanceData as $record):
+                        if ($count++ >= 10)
+                            break; ?>
+                        pdf.text('<?= htmlspecialchars($record['make'] . ' ' . $record['model']) ?>', 15, y);
+                        pdf.text('<?= ucfirst(htmlspecialchars($record['maintenance_type'])) ?>', 60, y);
+                        pdf.text('<?= formatCurrency($record['cost'] ?? 0) ?>', 100, y);
+                        pdf.text('<?= date('M d, Y', strtotime($record['start_date'])) ?>', 130, y);
+                        pdf.text('<?= ucfirst(str_replace('_', ' ', $record['status'])) ?>', 160, y);
+                        y += 6;
+                    <?php endforeach; ?>
+                    pdf.save('maintenance-report.pdf');
                 });
             </script>

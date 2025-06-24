@@ -17,6 +17,9 @@
                             class="bg-blue-500 text-white px-4 py-2 rounded-md <?= $reportType === 'maintenance' ? 'bg-blue-700' : '' ?>">Maintenance</a>
                         <a href="index.php?page=admin&action=reports&type=customer"
                             class="bg-blue-500 text-white px-4 py-2 rounded-md <?= $reportType === 'customer' ? 'bg-blue-700' : '' ?>">Customer</a>
+                        <button id="download-pdf"
+                            class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">Download
+                            PDF</button>
                     </div>
                 </div>
 
@@ -84,21 +87,21 @@
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
-                                    <?php 
-                        $totalPreferences = array_sum(array_column($preferencesData, 'count'));
-                        foreach ($preferencesData as $preference): 
-                        ?>
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                            <?= ucfirst(htmlspecialchars($preference['preferred_car_type'])) ?>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            <?= $preference['count'] ?>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            <?= number_format(($preference['count'] / $totalPreferences) * 100, 1) ?>%
-                                        </td>
-                                    </tr>
+                                    <?php
+                                    $totalPreferences = array_sum(array_column($preferencesData, 'count'));
+                                    foreach ($preferencesData as $preference):
+                                        ?>
+                                        <tr>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                <?= ucfirst(htmlspecialchars($preference['preferred_car_type'])) ?>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                <?= $preference['count'] ?>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                <?= number_format(($preference['count'] / $totalPreferences) * 100, 1) ?>%
+                                            </td>
+                                        </tr>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
@@ -138,29 +141,29 @@
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                 <?php foreach ($customerData as $customer): ?>
-                                <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm font-medium text-gray-900">
-                                            <?= htmlspecialchars($customer['full_name']) ?>
-                                        </div>
-                                        <div class="text-xs text-gray-500">
-                                            @<?= htmlspecialchars($customer['username']) ?>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        <?= htmlspecialchars($customer['email']) ?>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        <?= $customer['rental_count'] ?>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        RWF <?= number_format($customer['total_spent'] ?? 0, 2) ?>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        <?= date('M d, Y', strtotime($customer['last_rental'])) ?>
-                                    </td>
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm font-medium text-gray-900">
+                                                <?= htmlspecialchars($customer['full_name']) ?>
+                                            </div>
+                                            <div class="text-xs text-gray-500">
+                                                @<?= htmlspecialchars($customer['username']) ?>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <?= htmlspecialchars($customer['email']) ?>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <?= $customer['rental_count'] ?>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            RWF <?= number_format($customer['total_spent'] ?? 0, 2) ?>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <?= date('M d, Y', strtotime($customer['last_rental'])) ?>
+                                        </td>
 
-                                </tr>
+                                    </tr>
                                 <?php endforeach; ?>
                             </tbody>
                         </table>
@@ -170,97 +173,156 @@
 
             <!-- Include Chart.js -->
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
             <script>
-            // Customer Growth Chart
-            const growthCtx = document.getElementById('customerGrowthChart').getContext('2d');
+                // Customer Growth Chart
+                const growthCtx = document.getElementById('customerGrowthChart').getContext('2d');
 
-            const customerGrowthChart = new Chart(growthCtx, {
-                type: 'line',
-                data: {
-                    labels: <?= $chartData['months'] ?>,
-                    datasets: [{
-                        label: 'New Customers',
-                        data: <?= $chartData['newUsers'] ?>,
-                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                        borderColor: 'rgba(59, 130, 246, 1)',
-                        borderWidth: 2,
-                        tension: 0.1,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Number of New Customers'
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Month'
-                            }
-                        }
-                    }
-                }
-            });
-
-            // Customer Preferences Chart
-            const preferencesCtx = document.getElementById('preferencesChart').getContext('2d');
-
-            // Prepare data for preferences chart
-            const preferenceLabels =
-                <?= json_encode(array_map(function($pref) { return ucfirst($pref['preferred_car_type']); }, $preferencesData)) ?>;
-            const preferenceCounts = <?= json_encode(array_column($preferencesData, 'count')) ?>;
-
-            const preferencesChart = new Chart(preferencesCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: preferenceLabels,
-                    datasets: [{
-                        data: preferenceCounts,
-                        backgroundColor: [
-                            'rgba(54, 162, 235, 0.7)',
-                            'rgba(255, 99, 132, 0.7)',
-                            'rgba(255, 206, 86, 0.7)',
-                            'rgba(75, 192, 192, 0.7)',
-                            'rgba(153, 102, 255, 0.7)',
-                            'rgba(255, 159, 64, 0.7)'
-                        ],
-                        borderColor: [
-                            'rgba(54, 162, 235, 1)',
-                            'rgba(255, 99, 132, 1)',
-                            'rgba(255, 206, 86, 1)',
-                            'rgba(75, 192, 192, 1)',
-                            'rgba(153, 102, 255, 1)',
-                            'rgba(255, 159, 64, 1)'
-                        ],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'right',
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.label || '';
-                                    const value = context.raw || 0;
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const percentage = Math.round((value / total) * 100);
-                                    return `${label}: ${value} customers (${percentage}%)`;
+                const customerGrowthChart = new Chart(growthCtx, {
+                    type: 'line',
+                    data: {
+                        labels: <?= $chartData['months'] ?>,
+                        datasets: [{
+                            label: 'New Customers',
+                            data: <?= $chartData['newUsers'] ?>,
+                            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                            borderColor: 'rgba(59, 130, 246, 1)',
+                            borderWidth: 2,
+                            tension: 0.1,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Number of New Customers'
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Month'
                                 }
                             }
                         }
                     }
-                }
-            });
+                });
+
+                // Customer Preferences Chart
+                const preferencesCtx = document.getElementById('preferencesChart').getContext('2d');
+
+                // Prepare data for preferences chart
+                const preferenceLabels =
+                    <?= json_encode(array_map(function ($pref) {
+                        return ucfirst($pref['preferred_car_type']);
+                    }, $preferencesData)) ?>;
+                const preferenceCounts = <?= json_encode(array_column($preferencesData, 'count')) ?>;
+
+                const preferencesChart = new Chart(preferencesCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: preferenceLabels,
+                        datasets: [{
+                            data: preferenceCounts,
+                            backgroundColor: [
+                                'rgba(54, 162, 235, 0.7)',
+                                'rgba(255, 99, 132, 0.7)',
+                                'rgba(255, 206, 86, 0.7)',
+                                'rgba(75, 192, 192, 0.7)',
+                                'rgba(153, 102, 255, 0.7)',
+                                'rgba(255, 159, 64, 0.7)'
+                            ],
+                            borderColor: [
+                                'rgba(54, 162, 235, 1)',
+                                'rgba(255, 99, 132, 1)',
+                                'rgba(255, 206, 86, 1)',
+                                'rgba(75, 192, 192, 1)',
+                                'rgba(153, 102, 255, 1)',
+                                'rgba(255, 159, 64, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        const label = context.label || '';
+                                        const value = context.raw || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = Math.round((value / total) * 100);
+                                        return `${label}: ${value} customers (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                document.addEventListener('DOMContentLoaded', function () {
+                    var btn = document.getElementById('download-pdf');
+                    if (!btn) return;
+                    btn.addEventListener('click', function () {
+                        const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
+                        let y = 15;
+                        pdf.setFontSize(18);
+                        pdf.text('Customer Report', 105, y, { align: 'center' });
+                        y += 10;
+                        pdf.setFontSize(12);
+                        pdf.text('Date: ' + new Date().toLocaleDateString(), 15, y);
+                        y += 10;
+                        // Table: Customer Preferences
+                        pdf.setFontSize(14);
+                        pdf.text('Customer Preferences', 15, y);
+                        y += 8;
+                        pdf.setFontSize(10);
+                        pdf.text('Car Type', 15, y);
+                        pdf.text('Customers', 70, y);
+                        pdf.text('Percent', 110, y);
+                        y += 6;
+                        <?php $totalPreferences = array_sum(array_column($preferencesData, 'count'));
+                        foreach ($preferencesData as $preference): ?>
+                            pdf.text('<?= ucfirst(htmlspecialchars($preference['preferred_car_type'])) ?>', 15, y);
+                            pdf.text('<?= $preference['count'] ?>', 70, y);
+                            pdf.text('<?= number_format(($preference['count'] / $totalPreferences) * 100, 1) ?>%', 110, y);
+                            y += 6;
+                        <?php endforeach; ?>
+                        y += 6;
+                        // Table: Top Customers by Revenue (first 10 for brevity)
+                        pdf.setFontSize(14);
+                        pdf.text('Top Customers by Revenue', 15, y);
+                        y += 8;
+                        pdf.setFontSize(10);
+                        pdf.text('Name', 15, y);
+                        pdf.text('Email', 60, y);
+                        pdf.text('Rentals', 110, y);
+                        pdf.text('Spent', 135, y);
+                        pdf.text('Last Rental', 160, y);
+                        y += 6;
+                        <?php $count = 0;
+                        foreach ($customerData as $customer):
+                            if ($count++ >= 10)
+                                break; ?>
+                            pdf.text('<?= htmlspecialchars($customer['full_name']) ?>', 15, y);
+                            pdf.text('<?= htmlspecialchars($customer['email']) ?>', 60, y);
+                            pdf.text('<?= $customer['rental_count'] ?>', 110, y);
+                            pdf.text('RWF <?= number_format($customer['total_spent'] ?? 0, 2) ?>', 135, y);
+                            pdf.text('<?= date('M d, Y', strtotime($customer['last_rental'])) ?>', 160, y);
+                            y += 6;
+                        <?php endforeach; ?>
+                        pdf.save('customer-report.pdf');
+                    });
+                });
             </script>
