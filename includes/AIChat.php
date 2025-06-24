@@ -103,6 +103,39 @@ class AIChat
                 "Perfect! Let's finalize your booking. Please review your details and proceed to payment."
             ]
         ],
+        // New intent: Payment Methods
+        'payment_methods' => [
+            'keywords' => ['payment', 'pay', 'payment method', 'methods', 'card', 'credit card', 'debit card', 'mobile money', 'stripe', 'cash'],
+            'responses' => [
+                "We accept multiple payment methods including credit/debit cards, mobile money, and secure online payments via Stripe.",
+                "You can pay for your rental using credit card, debit card, mobile money, or Stripe. Which method would you like to use?",
+                "For your convenience, we support card payments and mobile money. Let me know if you need help with a specific method."
+            ]
+        ],
+        // New intent: Mobile Money
+        'mobile_money' => [
+            'keywords' => ['mobile money', 'mpesa', 'airtel money', 'tigo pesa', 'mtn mobile', 'pay by phone'],
+            'responses' => [
+                "Yes, we support mobile money payments such as M-Pesa, Airtel Money, Tigo Pesa, and MTN Mobile. You can select this option during checkout.",
+                "Mobile money is a fast and secure way to pay. Just choose your provider at payment and follow the instructions. Need help with mobile money?"
+            ]
+        ],
+        // New intent: Support
+        'support' => [
+            'keywords' => ['support', 'help', 'contact', 'customer service', 'agent', 'problem', 'issue', 'assistance'],
+            'responses' => [
+                "Our support team is available 24/7! You can reach us via this chat, email, or phone. What do you need help with?",
+                "If you have any issues or need assistance, just let me know. I can connect you to a human agent or provide more information."
+            ]
+        ],
+        // New intent: Help
+        'help' => [
+            'keywords' => ['help', 'how do i', 'how to', 'can you', 'assist', 'guide', 'faq', 'question'],
+            'responses' => [
+                "I'm here to help! You can ask me about car availability, booking, payments, or anything else related to rentals.",
+                "Need help? Try asking about our cars, booking process, payment options, or type 'FAQ' to see common questions."
+            ]
+        ],
         'default' => [
             'responses' => [
                 "I'm here to assist you with car rentals. Could you provide more details about what you're looking for?",
@@ -114,6 +147,12 @@ class AIChat
     public function getResponse($query)
     {
         $query = strtolower($query);
+
+        // 1. Check FAQ table for a matching answer (by keywords or question)
+        $faqAnswer = $this->getMatchingFaqAnswer($query);
+        if ($faqAnswer) {
+            return $faqAnswer;
+        }
 
         // Handle follow-up for car selection
         if ($this->currentState === 'car_selected' && strpos($query, 'yes') !== false) {
@@ -210,5 +249,23 @@ class AIChat
         return $this->getRandomResponse($responses);
     }
 
+    /**
+     * Try to find a matching FAQ answer for the user's query.
+     * Returns the answer string if found, or null if not.
+     */
+    private function getMatchingFaqAnswer($query)
+    {
+        // Search for active FAQs where the question or keywords match the query (simple LIKE match)
+        $sql = "SELECT answer FROM faqs WHERE active = 1 AND (LOWER(question) LIKE ? OR LOWER(keywords) LIKE ?) LIMIT 1";
+        $like = "%$query%";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param('ss', $like, $like);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($row = $result->fetch_assoc()) {
+            return $row['answer'];
+        }
+        return null;
+    }
 
 }

@@ -1,10 +1,12 @@
 <?php
-class Router {
-    public function route() {
+class Router
+{
+    public function route()
+    {
         $page = isset($_GET['page']) ? $_GET['page'] : 'home';
         $action = isset($_GET['action']) ? $_GET['action'] : 'index';
-        
-        switch($page) {
+
+        switch ($page) {
             case 'home':
                 require 'views/home.php';
                 break;
@@ -18,22 +20,22 @@ class Router {
                 $controller = new RentalController();
                 $controller->handle();
                 break;
-            
+
             case 'auth':
                 require 'controllers/AuthController.php';
                 $controller = new AuthController();
                 $controller->handle();
                 break;
             case 'profile':
-                    require 'controllers/UserController.php';
-                    $controller = new UserController();
-                    $controller->handle();
-                    break;
+                require 'controllers/UserController.php';
+                $controller = new UserController();
+                $controller->handle();
+                break;
             case 'admin':
-                    require 'controllers/AdminController.php';
-                    $controller = new AdminController();
-                    $controller->handle();
-                    break;
+                require 'controllers/AdminController.php';
+                $controller = new AdminController();
+                $controller->handle();
+                break;
             case 'terms':
                 require 'views/terms.php';
                 break;
@@ -51,9 +53,9 @@ class Router {
                     require 'views/404.php';
                 }
                 break;
-                case 'promotions':
+            case 'promotions':
                 require 'views/promotions.php';
-             break;
+                break;
             default:
                 require 'views/404.php';
         }

@@ -247,3 +247,13 @@ INSERT INTO `system_logs` (`user_id`, `action`, `details`, `ip_address`) VALUES
 (1, 'login', 'User logged in successfully', '192.168.1.1'),
 (1, 'rental_created', 'Created rental ID: 1', '192.168.1.1'),
 (2, 'login', 'User logged in successfully', '192.168.1.2');
+
+
+/* improved query */
+CREATE TABLE faqs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    question VARCHAR(255) NOT NULL,
+    answer TEXT NOT NULL,
+    keywords VARCHAR(255),
+    active TINYINT(1) DEFAULT 1
+);
