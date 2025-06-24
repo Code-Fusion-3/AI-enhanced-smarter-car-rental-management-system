@@ -429,23 +429,6 @@ function removeQueryParam($param)
                                 <?= htmlspecialchars($categoryName) ?>
                             </div>
 
-                            <!-- Favorite Button (if logged in) -->
-                            <?php if (isLoggedIn()): ?>
-                                <button type="button" onclick="toggleFavorite(<?= $car['car_id'] ?>, this)"
-                                    class="absolute top-12 left-0 m-2 p-2 bg-white rounded-full shadow-md hover:bg-gray-100 focus:outline-none"
-                                    aria-label="Add to favorites">
-                                    <svg xmlns="http://www.w3.org/2000/svg"
-                                        class="h-5 w-5 <?= in_array($car['car_id'], $favorites) ? 'text-red-500' : 'text-gray-400' ?> favorite-icon"
-                                        viewBox="0 0 20 20"
-                                        fill="<?= in_array($car['car_id'], $favorites) ? 'currentColor' : 'none' ?>"
-                                        stroke="currentColor">
-                                        <path fill-rule="evenodd"
-                                            d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
-                                            clip-rule="evenodd" />
-                                    </svg>
-                                </button>
-                            <?php endif; ?>
-
                             <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4">
                                 <h3 class="text-xl font-bold text-white">
                                     <?= htmlspecialchars($car['make'] . ' ' . $car['model']) ?>
@@ -806,32 +789,6 @@ function removeQueryParam($param)
         urlParams.delete(param);
         urlParams.set('page', 'cars'); // Ensure we keep the page parameter
         return 'index.php?' + urlParams.toString();
-    }
-    // Toggle favorite status
-    function toggleFavorite(carId, button) {
-        fetch('index.php?page=cars&action=toggle_favorite&car_id=' + carId, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-            .then(response => response.json())
-            .then(data => {
-                const icon = button.querySelector('.favorite-icon');
-                if (data.status === 'added') {
-                    icon.setAttribute('fill', 'currentColor');
-                    icon.classList.add('text-red-500');
-                    icon.classList.remove('text-gray-400');
-                } else {
-                    icon.setAttribute('fill', 'none');
-                    icon.classList.add('text-gray-400');
-                    icon.classList.remove('text-red-500');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
     }
 </script>
 

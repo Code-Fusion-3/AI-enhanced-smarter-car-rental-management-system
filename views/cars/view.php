@@ -126,21 +126,6 @@
                                 <?= htmlspecialchars($car['status']) ?>
                             </div>
                         <?php endif; ?>
-                        
-                        <?php if (isLoggedIn()): ?>
-                            <button type="button" 
-                                    onclick="toggleFavorite(<?= $car['car_id'] ?>, this)" 
-                                    class="absolute top-4 left-4 p-2 bg-white rounded-full shadow-md hover:bg-gray-100 focus:outline-none"
-                                    aria-label="<?= $isFavorite ? 'Remove from favorites' : 'Add to favorites' ?>">
-                                <svg xmlns="http://www.w3.org/2000/svg" 
-                                     class="h-6 w-6 <?= $isFavorite ? 'text-red-500' : 'text-gray-400' ?> favorite-icon" 
-                                     viewBox="0 0 20 20" 
-                                     fill="<?= $isFavorite ? 'currentColor' : 'none' ?>" 
-                                     stroke="currentColor">
-                                    <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" />
-                                </svg>
-                            </button>
-                        <?php endif; ?>
                     </div>
                     
                     <!-- Car Details -->
@@ -695,31 +680,9 @@ echo ($savings > 0) ? 'Save $' . number_format($savings, 2) : '-';
 
 <script>
 // Toggle favorite status
-function toggleFavorite(carId, button) {
-    fetch('index.php?page=cars&action=toggle_favorite&car_id=' + carId, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        const icon = button.querySelector('.favorite-icon');
-        if (data.status === 'added') {
-            icon.setAttribute('fill', 'currentColor');
-            icon.classList.add('text-red-500');
-            icon.classList.remove('text-gray-400');
-        } else {
-            icon.setAttribute('fill', 'none');
-            icon.classList.add('text-gray-400');
-            icon.classList.remove('text-red-500');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-    });
-}
+// function toggleFavorite(carId, button) {
+//     ... (removed)
+// }
 function openReviewModal() {
         document.getElementById('reviewModal').classList.remove('hidden');
         document.body.style.overflow = 'hidden'; // Prevent scrolling when modal is open
