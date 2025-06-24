@@ -11,8 +11,7 @@
                     <div class="flex space-x-2">
                         <a href="index.php?page=admin&action=reports&type=revenue"
                             class="bg-blue-500 text-white px-4 py-2 rounded-md <?= $reportType === 'revenue' ? 'bg-blue-700' : '' ?>">Revenue</a>
-                        <a href="index.php?page=admin&action=reports&type=utilization"
-                            class="bg-blue-500 text-white px-4 py-2 rounded-md <?= $reportType === 'utilization' ? 'bg-blue-700' : '' ?>">Utilization</a>
+                        
                         <a href="index.php?page=admin&action=reports&type=maintenance"
                             class="bg-blue-500 text-white px-4 py-2 rounded-md <?= $reportType === 'maintenance' ? 'bg-blue-700' : '' ?>">Maintenance</a>
                         <a href="index.php?page=admin&action=reports&type=customer"
@@ -284,16 +283,120 @@
                     }
                 });
 
-                document.getElementById('download-pdf').addEventListener('click', function () {
-                    html2canvas(document.querySelector('.container')).then(canvas => {
-                        const imgData = canvas.toDataURL('image/png');
-                        const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
+                // Custom jsPDF Export for Utilization Report
+                // Wait for DOMContentLoaded to ensure all elements are ready
+                window.addEventListener('DOMContentLoaded', function () {
+                    document.getElementById('download-pdf').addEventListener('click', function () {
+                        const { jsPDF } = window.jspdf;
+                        const pdf = new jsPDF('p', 'mm', 'a4');
                         const pageWidth = pdf.internal.pageSize.getWidth();
-                        const pageHeight = pdf.internal.pageSize.getHeight();
-                        const imgProps = pdf.getImageProperties(imgData);
-                        const pdfWidth = pageWidth;
-                        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-                        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                        let y = 15;
+
+                        // Header
+                        pdf.setFillColor(59, 130, 246); // Tailwind blue-600
+                        pdf.rect(0, 0, pageWidth, 20, 'F');
+                        pdf.setTextColor(255, 255, 255);
+                        pdf.setFontSize(18);
+                        pdf.text('Fleet Utilization Report', pageWidth / 2, 13, { align: 'center' });
+                        y = 28;
+
+                        // Date Range
+                        pdf.setFontSize(11);
+                        pdf.setTextColor(80, 80, 80);
+                        pdf.text(`Period: <?= htmlspecialchars($startDate->format('Y-m-d')) ?> to <?= htmlspecialchars($endDate->format('Y-m-d')) ?>`, 12, y);
+                        y += 8;
+
+                        // Section Divider
+                        pdf.setDrawColor(59, 130, 246);
+                        pdf.setLineWidth(1);
+                        pdf.line(12, y, pageWidth - 12, y);
+                        y += 6;
+
+                        // Utilization Summary Cards (as table)
+                        pdf.setFontSize(13);
+                        pdf.setTextColor(59, 130, 246);
+                        pdf.text('Summary', 12, y);
+                        y += 6;
+                        pdf.setFontSize(11);
+                        pdf.setTextColor(0, 0, 0);
+                        pdf.setFillColor(219, 234, 254); // Tailwind blue-100
+                        pdf.rect(12, y, pageWidth - 24, 8, 'F');
+                        pdf.setTextColor(59, 130, 246);
+                        pdf.text('Overall Utilization Rate', 14, y + 6);
+                        pdf.text('Total Fleet Size', 80, y + 6);
+                        pdf.text('Total Rental Days', 140, y + 6);
+                        y += 8;
+                        pdf.setTextColor(0, 0, 0);
+                        pdf.text('<?= number_format($overallUtilization, 1) ?>%', 14, y + 6);
+                        pdf.text('<?= $totalCars ?>', 80, y + 6);
+                        pdf.text('<?= $totalRentalDays ?>', 140, y + 6);
+                        y += 12;
+
+                        // Section Divider
+                        pdf.setDrawColor(59, 130, 246);
+                        pdf.setLineWidth(0.5);
+                        pdf.line(12, y, pageWidth - 12, y);
+                        y += 6;
+
+                        // Utilization by Category Table
+                        pdf.setFontSize(13);
+                        pdf.setTextColor(59, 130, 246);
+                        pdf.text('Utilization by Category', 12, y);
+                        y += 6;
+                        pdf.setFontSize(10);
+                        pdf.setFillColor(191, 219, 254); // Tailwind blue-200
+                        pdf.setTextColor(59, 130, 246);
+                        pdf.rect(12, y, pageWidth - 24, 8, 'F');
+                        pdf.text('Category', 14, y + 6);
+                        pdf.text('Car Count', 50, y + 6);
+                        pdf.text('Rental Count', 80, y + 6);
+                        pdf.text('Total Rental Days', 115, y + 6);
+                        pdf.text('Utilization Rate', 160, y + 6);
+                        y += 8;
+                        pdf.setTextColor(0, 0, 0);
+                        <?php foreach ($categoryData as $category): ?>
+                            if (y > 270) { pdf.addPage(); y = 20; }
+                            pdf.text('<?= htmlspecialchars($category['category']) ?>', 14, y + 6);
+                            pdf.text('<?= $category['car_count'] ?>', 50, y + 6);
+                            pdf.text('<?= $category['rental_count'] ?>', 80, y + 6);
+                            pdf.text('<?= $category['total_rental_days'] ?>', 115, y + 6);
+                            pdf.text('<?= number_format($category['utilization_rate'] ?? 0, 1) ?>%', 160, y + 6);
+                            y += 8;
+                        <?php endforeach; ?>
+                        y += 4;
+
+                        // Section Divider
+                        pdf.setDrawColor(59, 130, 246);
+                        pdf.line(12, y, pageWidth - 12, y);
+                        y += 6;
+
+                        // Individual Car Utilization Table
+                        pdf.setFontSize(13);
+                        pdf.setTextColor(59, 130, 246);
+                        pdf.text('Individual Car Utilization', 12, y);
+                        y += 6;
+                        pdf.setFontSize(10);
+                        pdf.setFillColor(191, 219, 254);
+                        pdf.setTextColor(59, 130, 246);
+                        pdf.rect(12, y, pageWidth - 24, 8, 'F');
+                        pdf.text('Vehicle', 14, y + 6);
+                        pdf.text('Category', 60, y + 6);
+                        pdf.text('Rental Count', 95, y + 6);
+                        pdf.text('Total Rental Days', 130, y + 6);
+                        pdf.text('Utilization Rate', 170, y + 6);
+                        y += 8;
+                        pdf.setTextColor(0, 0, 0);
+                        <?php foreach ($utilizationData as $car): ?>
+                            if (y > 270) { pdf.addPage(); y = 20; }
+                            pdf.text('<?= htmlspecialchars($car['make'] . ' ' . $car['model']) ?> (<?= htmlspecialchars($car['registration_number']) ?>)', 14, y + 6);
+                            pdf.text('<?= htmlspecialchars($car['category']) ?>', 60, y + 6);
+                            pdf.text('<?= $car['rental_count'] ?>', 95, y + 6);
+                            pdf.text('<?= $car['total_rental_days'] ?>', 130, y + 6);
+                            pdf.text('<?= number_format($car['utilization_rate'] ?? 0, 1) ?>%', 170, y + 6);
+                            y += 8;
+                        <?php endforeach; ?>
+
+                        // Save PDF
                         pdf.save('utilization-report.pdf');
                     });
                 });

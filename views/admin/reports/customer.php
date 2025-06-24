@@ -11,8 +11,7 @@
                     <div class="flex space-x-2">
                         <a href="index.php?page=admin&action=reports&type=revenue"
                             class="bg-blue-500 text-white px-4 py-2 rounded-md <?= $reportType === 'revenue' ? 'bg-blue-700' : '' ?>">Revenue</a>
-                        <a href="index.php?page=admin&action=reports&type=utilization"
-                            class="bg-blue-500 text-white px-4 py-2 rounded-md <?= $reportType === 'utilization' ? 'bg-blue-700' : '' ?>">Utilization</a>
+
                         <a href="index.php?page=admin&action=reports&type=maintenance"
                             class="bg-blue-500 text-white px-4 py-2 rounded-md <?= $reportType === 'maintenance' ? 'bg-blue-700' : '' ?>">Maintenance</a>
                         <a href="index.php?page=admin&action=reports&type=customer"
@@ -276,18 +275,31 @@
                     if (!btn) return;
                     btn.addEventListener('click', function () {
                         const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
-                        let y = 15;
-                        pdf.setFontSize(18);
-                        pdf.text('Customer Report', 105, y, { align: 'center' });
-                        y += 10;
+                        // Header design
+                        pdf.setFillColor(54, 162, 235);
+                        pdf.rect(0, 0, 210, 20, 'F');
+                        pdf.setTextColor(255, 255, 255);
+                        pdf.setFontSize(20);
+                        pdf.text('Customer Report', 105, 13, { align: 'center' });
+                        pdf.setTextColor(0, 0, 0);
+                        let y = 25;
                         pdf.setFontSize(12);
                         pdf.text('Date: ' + new Date().toLocaleDateString(), 15, y);
-                        y += 10;
+                        y += 8;
+                        // Section divider
+                        pdf.setDrawColor(54, 162, 235);
+                        pdf.setLineWidth(1);
+                        pdf.line(10, y, 200, y);
+                        y += 5;
                         // Table: Customer Preferences
                         pdf.setFontSize(14);
+                        pdf.setTextColor(54, 162, 235);
                         pdf.text('Customer Preferences', 15, y);
+                        pdf.setTextColor(0, 0, 0);
                         y += 8;
                         pdf.setFontSize(10);
+                        pdf.setFillColor(230, 240, 255);
+                        pdf.rect(13, y - 5, 180, 7, 'F');
                         pdf.text('Car Type', 15, y);
                         pdf.text('Customers', 70, y);
                         pdf.text('Percent', 110, y);
@@ -299,12 +311,21 @@
                             pdf.text('<?= number_format(($preference['count'] / $totalPreferences) * 100, 1) ?>%', 110, y);
                             y += 6;
                         <?php endforeach; ?>
-                        y += 6;
+                        y += 4;
+                        // Section divider
+                        pdf.setDrawColor(54, 162, 235);
+                        pdf.setLineWidth(0.5);
+                        pdf.line(10, y, 200, y);
+                        y += 5;
                         // Table: Top Customers by Revenue (first 10 for brevity)
                         pdf.setFontSize(14);
+                        pdf.setTextColor(54, 162, 235);
                         pdf.text('Top Customers by Revenue', 15, y);
+                        pdf.setTextColor(0, 0, 0);
                         y += 8;
                         pdf.setFontSize(10);
+                        pdf.setFillColor(230, 240, 255);
+                        pdf.rect(13, y - 5, 180, 7, 'F');
                         pdf.text('Name', 15, y);
                         pdf.text('Email', 60, y);
                         pdf.text('Rentals', 110, y);
