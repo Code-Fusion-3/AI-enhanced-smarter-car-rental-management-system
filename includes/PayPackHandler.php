@@ -2,10 +2,6 @@
 /**
  * PayPackHandler
  * Handles mobile money (MTN/Airtel) payments for car rentals.
- *
- * Usage:
- *   $paypack = new PayPackHandler();
- *   $result = $paypack->initiatePayment($rentalId, $amount, $phoneNumber);
  */
 
 require_once __DIR__ . '/../config/database.php';
@@ -20,28 +16,24 @@ class PayPackHandler
     private $conn;
     private $messagingService;
 
-  public function __construct($connection = null)
+    public function __construct($connection = null)
     {
         error_log("=== PAYPACK HANDLER CONSTRUCTOR ===");
-        
-        // Use provided connection or get global connection
+
         if ($connection) {
             $this->conn = $connection;
         } else {
             global $conn;
             $this->conn = $conn;
         }
-        
+
         $this->messagingService = new MessagingService();
         $this->loadSettings();
         error_log("PayPack handler initialized");
     }
+
     /**
      * Initiate a mobile money payment
-     * @param int $rentalId
-     * @param float $amount
-     * @param string $phoneNumber
-     * @return array [success => bool, transaction_id => string, message => string]
      */
     public function initiatePayment($rentalId, $amount, $phoneNumber)
     {
@@ -51,7 +43,6 @@ class PayPackHandler
             error_log("Amount: " . $amount);
             error_log("Original phone input: '" . $phoneNumber . "'");
 
-            // Format phone number using the working method
             $formattedPhone = $this->formatPhoneForPayPack($phoneNumber);
             error_log("Formatted phone for PayPack: " . $formattedPhone);
 
@@ -65,11 +56,11 @@ class PayPackHandler
                 ];
             }
 
-            error_log("Token obtained, proceeding with payment");
-
-            // Generate unique reference
+            // Generate unique reference and idempotency key
             $reference = 'rental_' . $rentalId . '_' . time();
+            $idempotencyKey = substr(md5($reference . microtime()), 0, 32);
             error_log("Payment reference: " . $reference);
+            error_log("Idempotency key: " . $idempotencyKey);
 
             // Create payment transaction record BEFORE making the API call
             try {
@@ -90,12 +81,14 @@ class PayPackHandler
                 ];
             }
 
-            // Make payment request using the exact same structure as working test
+            // Make payment request
             $curl = curl_init();
 
             $headers = [
                 "Authorization: Bearer $token",
-                'Content-Type: application/json'
+                'Content-Type: application/json',
+                'Accept: application/json',
+                'Idempotency-Key: ' . $idempotencyKey
             ];
 
             $paymentData = [
@@ -154,22 +147,22 @@ class PayPackHandler
 
             // Update transaction record based on response
             if ($http_code == 200 || $http_code == 201) {
-                $gatewayId = $responseData['ref'] ?? $reference;
+                $gatewayRef = $responseData['ref'] ?? $reference;
 
                 $stmt = $this->conn->prepare("
                     UPDATE payment_transactions 
-                    SET status = 'processing', gateway_transaction_id = ?, gateway_response = ?
+                    SET status = 'pending', gateway_transaction_id = ?, gateway_response = ?
                     WHERE transaction_id = ?
                 ");
-                $stmt->bind_param("ssi", $gatewayId, $response, $transactionId);
+                $stmt->bind_param("ssi", $gatewayRef, $response, $transactionId);
                 $stmt->execute();
 
-                error_log("Payment successful - Transaction ID: " . $transactionId . ", Gateway Ref: " . $gatewayId);
+                error_log("Payment initiated successfully - Transaction ID: " . $transactionId . ", Gateway Ref: " . $gatewayRef);
 
                 return [
                     'success' => true,
                     'transaction_id' => $transactionId,
-                    'gateway_reference' => $gatewayId,
+                    'gateway_reference' => $gatewayRef,
                     'message' => 'Payment initiated successfully. Please check your phone for the payment prompt.'
                 ];
             } else {
@@ -187,12 +180,7 @@ class PayPackHandler
 
                 return [
                     'success' => false,
-                    'message' => $failureReason,
-                    'debug_info' => [
-                        'http_code' => $http_code,
-                        'response' => $responseData,
-                        'curl_error' => $curl_error
-                    ]
+                    'message' => $failureReason
                 ];
             }
 
@@ -207,9 +195,7 @@ class PayPackHandler
     }
 
     /**
-     * Check payment status and send notifications
-     * @param int $transactionId
-     * @return array
+     * Check payment status using events API
      */
     public function checkPaymentStatus($transactionId)
     {
@@ -219,10 +205,10 @@ class PayPackHandler
 
             // Get the gateway reference from database
             $stmt = $this->conn->prepare("
-                SELECT gateway_transaction_id, gateway_reference, status 
-                FROM payment_transactions 
-                WHERE transaction_id = ?
-            ");
+            SELECT gateway_transaction_id, gateway_reference, status 
+            FROM payment_transactions 
+            WHERE transaction_id = ?
+        ");
             $stmt->bind_param("i", $transactionId);
             $stmt->execute();
             $result = $stmt->get_result()->fetch_assoc();
@@ -244,134 +230,281 @@ class PayPackHandler
             $token = $this->getPaypackToken();
             if (!$token) {
                 error_log("Failed to get authentication token for status check");
-                return ['success' => false, 'message' => 'Authentication failed'];
+                return ['success' => false, 'message' => 'Authentication failed - check PayPack credentials'];
             }
 
-            // Make status check request
-            $curl = curl_init();
+            error_log("Token obtained for status check: " . substr($token, 0, 20) . "...");
 
-            curl_setopt_array($curl, array(
-                CURLOPT_URL => $this->apiUrl . "/transactions/find/" . $reference,
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_ENCODING => '',
-                CURLOPT_MAXREDIRS => 10,
-                CURLOPT_TIMEOUT => 30,
-                CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-                CURLOPT_CUSTOMREQUEST => 'GET',
-                CURLOPT_HTTPHEADER => array(
-                    "Authorization: Bearer $token"
-                ),
-            ));
+            // First try events API
+            $eventsResult = $this->checkPaypackEvents($token, $reference);
 
-            $response = curl_exec($curl);
-            $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-            $curl_error = curl_error($curl);
+            error_log("Events API HTTP Code: " . $eventsResult['http_code']);
+            error_log("Events API Response: " . $eventsResult['response']);
 
-            error_log("Status check HTTP Code: " . $http_code);
-            error_log("Status check response: " . $response);
+            if ($eventsResult['http_code'] == 200 && $eventsResult['decoded']) {
+                $events = $eventsResult['decoded'];
 
-            curl_close($curl);
+                // Look for completion events first
+                if (isset($events['transactions']) && is_array($events['transactions'])) {
+                    foreach ($events['transactions'] as $event) {
+                        if (isset($event['event_kind'])) {
+                            error_log("Found event: " . $event['event_kind']);
 
-            if ($curl_error) {
-                error_log("CURL error during status check: " . $curl_error);
-                return ['success' => false, 'message' => 'Network error during status check'];
-            }
+                            // Check for completion events
+                            if (
+                                $event['event_kind'] === 'transaction:processed' ||
+                                $event['event_kind'] === 'transaction:successful' ||
+                                $event['event_kind'] === 'transaction:completed'
+                            ) {
 
-            $paypackStatus = null;
-            if ($http_code == 200) {
-                $responseData = json_decode($response, true);
+                                error_log("Found completion event: " . $event['event_kind']);
+                                return $this->updateTransactionStatus($transactionId, 'successful', $result['status'], $eventsResult['response']);
+                            }
 
-                if ($responseData && isset($responseData['status'])) {
-                    $paypackStatus = $responseData['status'];
-                    error_log("PayPack status: " . $paypackStatus);
+                            // Check for failure events
+                            if (
+                                $event['event_kind'] === 'transaction:failed' ||
+                                $event['event_kind'] === 'transaction:cancelled'
+                            ) {
 
-                    // Map PayPack status to our system status
-                    $newStatus = null;
-                    switch (strtolower($paypackStatus)) {
-                        case 'successful':
-                        case 'completed':
-                            $newStatus = 'completed';
-                            break;
-                        case 'failed':
-                        case 'cancelled':
-                            $newStatus = 'failed';
-                            break;
-                        case 'pending':
-                        case 'processing':
-                            $newStatus = 'processing';
-                            break;
+                                error_log("Found failure event: " . $event['event_kind']);
+                                return $this->updateTransactionStatus($transactionId, 'failed', $result['status'], $eventsResult['response']);
+                            }
+                        }
                     }
 
-                    // Update transaction status if changed
-                    if ($newStatus && $newStatus !== $result['status']) {
-                        $stmt = $this->conn->prepare("
-                            UPDATE payment_transactions 
-                            SET status = ?, updated_at = CURRENT_TIMESTAMP, gateway_response = ?
-                            WHERE transaction_id = ?
-                        ");
-                        $stmt->bind_param("ssi", $newStatus, $response, $transactionId);
-                        $stmt->execute();
+                    // If no completion events found, check for created events (still pending)
+                    foreach ($events['transactions'] as $event) {
+                        if (isset($event['event_kind']) && $event['event_kind'] === 'transaction:created') {
+                            $createdTime = strtotime($event['created_at'] ?? '');
+                            $minutesAgo = round((time() - $createdTime) / 60);
 
-                        error_log("Transaction status updated to: " . $newStatus);
-
-                        // If completed, send notifications and update rental
-                        $notifications = null;
-                        if ($newStatus === 'completed') {
-                            $notifications = $this->handleCompletedPayment($transactionId);
-                            error_log("Notification result: " . json_encode($notifications));
+                            return [
+                                'success' => true,
+                                'status_updated' => false,
+                                'current_status' => 'pending',
+                                'message' => "Payment request sent {$minutesAgo} minutes ago. Please check your phone and approve the payment."
+                            ];
                         }
-
-                        return [
-                            'success' => true,
-                            'status_updated' => true,
-                            'new_status' => $newStatus,
-                            'notifications_sent' => $notifications,
-                            'message' => 'Payment status updated'
-                        ];
-                    } else {
-                        return [
-                            'success' => true,
-                            'status_updated' => false,
-                            'current_status' => $result['status'],
-                            'message' => 'No status change'
-                        ];
                     }
                 }
+            } else {
+                error_log("Events API failed with code: " . $eventsResult['http_code']);
             }
 
-            error_log("Status check failed - HTTP Code: " . $http_code);
-            return ['success' => false, 'message' => 'Failed to check payment status'];
+            // Fallback to direct transaction check
+            error_log("Falling back to direct transaction check");
+            return $this->checkTransactionDirect($token, $reference, $transactionId, $result['status']);
 
         } catch (Exception $e) {
             error_log("Exception during status check: " . $e->getMessage());
+            error_log("Exception trace: " . $e->getTraceAsString());
             return ['success' => false, 'message' => 'Error checking payment status: ' . $e->getMessage()];
+        }
+    }
+
+
+    /**
+     * Update transaction status based on PayPack response
+     */
+    private function updateTransactionStatus($transactionId, $paypackStatus, $currentStatus, $response)
+    {
+        error_log("=== UPDATING TRANSACTION STATUS ===");
+        error_log("Transaction ID: " . $transactionId);
+        error_log("Current status: " . $currentStatus);
+        error_log("PayPack status: " . $paypackStatus);
+
+        // Map PayPack status to our system status
+        $newStatus = null;
+        switch (strtolower($paypackStatus)) {
+            case 'successful':
+            case 'success':
+                $newStatus = 'completed';
+                break;
+            case 'failed':
+            case 'cancelled':
+                $newStatus = 'failed';
+                break;
+            case 'pending':
+            case 'processing':
+                $newStatus = 'pending';
+                break;
+        }
+
+        error_log("Mapped new status: " . ($newStatus ?? 'null'));
+
+        // Update transaction status if changed
+        if ($newStatus && $newStatus !== $currentStatus) {
+            $stmt = $this->conn->prepare("
+            UPDATE payment_transactions 
+            SET status = ?, updated_at = CURRENT_TIMESTAMP, gateway_response = ?
+            WHERE transaction_id = ?
+        ");
+            $stmt->bind_param("ssi", $newStatus, $response, $transactionId);
+            $updateResult = $stmt->execute();
+
+            if (!$updateResult) {
+                error_log("Failed to update transaction status: " . $this->conn->error);
+                return [
+                    'success' => false,
+                    'message' => 'Failed to update transaction status'
+                ];
+            }
+
+            error_log("Transaction status updated to: " . $newStatus);
+
+            // If completed, handle completion
+            if ($newStatus === 'completed') {
+                error_log("Processing completed payment...");
+                $completionResult = $this->handleCompletedPayment($transactionId);
+
+                if ($completionResult && isset($completionResult['success']) && $completionResult['success']) {
+                    error_log("Payment completion handled successfully");
+                    return [
+                        'success' => true,
+                        'status_updated' => true,
+                        'new_status' => $newStatus,
+                        'redirect' => 'success',
+                        'message' => 'Payment completed successfully',
+                        'completion_details' => $completionResult
+                    ];
+                } else {
+                    error_log("Payment completion handling failed: " . json_encode($completionResult));
+                    return [
+                        'success' => true,
+                        'status_updated' => true,
+                        'new_status' => $newStatus,
+                        'redirect' => 'success',
+                        'message' => 'Payment completed but some post-processing failed',
+                        'completion_error' => $completionResult
+                    ];
+                }
+            } elseif ($newStatus === 'failed') {
+                return [
+                    'success' => true,
+                    'status_updated' => true,
+                    'new_status' => $newStatus,
+                    'redirect' => 'failed',
+                    'message' => 'Payment failed'
+                ];
+            }
+
+            return [
+                'success' => true,
+                'status_updated' => true,
+                'new_status' => $newStatus,
+                'message' => 'Payment status updated to ' . $newStatus
+            ];
+        } else {
+            return [
+                'success' => true,
+                'status_updated' => false,
+                'current_status' => $currentStatus,
+                'message' => 'No status change - still ' . $currentStatus
+            ];
+        }
+    }
+
+    /**
+     * Direct transaction status check using find API
+     */
+    private function checkTransactionDirect($token, $reference, $transactionId, $currentStatus)
+    {
+        error_log("=== DIRECT TRANSACTION CHECK ===");
+        error_log("Reference: " . $reference);
+
+        $curl = curl_init();
+
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => $this->apiUrl . "/transactions/find/" . $reference,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CUSTOMREQUEST => 'GET',
+            CURLOPT_HTTPHEADER => array(
+                "Authorization: Bearer $token",
+                'Accept: application/json',
+                'Content-Type: application/json'
+            ),
+            CURLOPT_TIMEOUT => 30,
+        ));
+
+        $response = curl_exec($curl);
+        $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $curl_error = curl_error($curl);
+
+        error_log("Direct transaction check - HTTP Code: " . $http_code);
+        error_log("Direct transaction response: " . $response);
+
+        if ($curl_error) {
+            error_log("CURL error in direct check: " . $curl_error);
+        }
+
+        curl_close($curl);
+
+        if ($curl_error) {
+            return [
+                'success' => false,
+                'message' => 'Network error during status check: ' . $curl_error
+            ];
+        }
+
+        if ($http_code == 200) {
+            $responseData = json_decode($response, true);
+            if ($responseData && isset($responseData['status'])) {
+                $paypackStatus = $responseData['status'];
+                error_log("Direct check PayPack status: " . $paypackStatus);
+
+                return $this->updateTransactionStatus($transactionId, $paypackStatus, $currentStatus, $response);
+            } else {
+                error_log("No status in direct response: " . $response);
+                return [
+                    'success' => false,
+                    'message' => 'Invalid response from PayPack API'
+                ];
+            }
+        } elseif ($http_code == 404) {
+            return [
+                'success' => true,
+                'status_updated' => false,
+                'current_status' => $currentStatus,
+                'message' => 'Transaction not found in PayPack - may still be processing'
+            ];
+        } else {
+            error_log("Direct check failed with HTTP " . $http_code . ": " . $response);
+            return [
+                'success' => false,
+                'message' => 'PayPack API error (HTTP ' . $http_code . ')'
+            ];
         }
     }
 
     /**
      * Handle completed payment - update rental and send notifications
-     * @param int $transactionId
-     * @return array
+     */
+
+    /**
+     * Handle completed payment - updated for correct table structure
      */
     private function handleCompletedPayment($transactionId)
     {
+        error_log("=== HANDLING COMPLETED PAYMENT ===");
+        error_log("Transaction ID: " . $transactionId);
+
         try {
             // Get transaction and rental details
             $stmt = $this->conn->prepare("
-                SELECT 
-                    pt.rental_id,
-                    pt.amount,
-                    pt.gateway_transaction_id,
-                    r.user_id,
-                    u.full_name,
-                    u.email,
-                    u.phone
-                FROM payment_transactions pt
-                JOIN rentals r ON pt.rental_id = r.rental_id
-                JOIN users u ON r.user_id = u.user_id
-                WHERE pt.transaction_id = ?
-            ");
+            SELECT 
+                pt.rental_id,
+                pt.amount,
+                pt.gateway_transaction_id,
+                r.user_id,
+                u.full_name,
+                u.email,
+                u.phone
+            FROM payment_transactions pt
+            JOIN rentals r ON pt.rental_id = r.rental_id
+            JOIN users u ON r.user_id = u.user_id
+            WHERE pt.transaction_id = ?
+        ");
             $stmt->bind_param("i", $transactionId);
             $stmt->execute();
             $data = $stmt->get_result()->fetch_assoc();
@@ -381,46 +514,102 @@ class PayPackHandler
                 return null;
             }
 
-            // Update rental status to paid
-            $stmt = $this->conn->prepare("
+            error_log("Processing payment for rental ID: " . $data['rental_id']);
+
+            // Start transaction
+            $this->conn->begin_transaction();
+
+            try {
+                // Update rental status to active (remove payment_status since it doesn't exist)
+                $stmt = $this->conn->prepare("
                 UPDATE rentals 
-                SET payment_status = 'paid', status = 'confirmed'
+                SET status = 'active'
                 WHERE rental_id = ?
             ");
-            $stmt->bind_param("i", $data['rental_id']);
-            $stmt->execute();
+                $stmt->bind_param("i", $data['rental_id']);
+                $updateResult = $stmt->execute();
 
-            // Send payment confirmation notifications
-            $notificationResult = $this->messagingService->sendPaymentConfirmation([
-                'email' => $data['email'],
-                'phone' => $data['phone'],
-                'name' => $data['full_name'],
-                'amount' => $data['amount'],
-                'payment_method' => 'Mobile Money (PayPack)',
-                'transaction_id' => $data['gateway_transaction_id'],
-                'rental_id' => $data['rental_id'],
-                'admin_email' => 'admin@yourcarrental.com' // Configure your admin email
-            ]);
+                if (!$updateResult) {
+                    throw new Exception("Failed to update rental status: " . $this->conn->error);
+                }
 
-            return $notificationResult;
+                error_log("Rental status updated to 'active' successfully");
+
+                // Insert into payments table for compatibility
+                $stmt = $this->conn->prepare("
+                INSERT INTO payments (rental_id, amount, payment_method, transaction_id, status, payment_date) 
+                VALUES (?, ?, 'paypack', ?, 'completed', NOW())
+                ON DUPLICATE KEY UPDATE status = 'completed', payment_date = NOW()
+            ");
+                $stmt->bind_param("ids", $data['rental_id'], $data['amount'], $data['gateway_transaction_id']);
+                $paymentResult = $stmt->execute();
+
+                if (!$paymentResult) {
+                    throw new Exception("Failed to insert payment record: " . $this->conn->error);
+                }
+
+                error_log("Payment record inserted/updated successfully");
+
+                // Commit transaction
+                $this->conn->commit();
+                error_log("Database transaction committed successfully");
+
+                // Get admin user for notifications
+                $adminResult = $this->conn->query("SELECT * FROM users WHERE role = 'admin' LIMIT 1");
+                $adminUser = $adminResult ? $adminResult->fetch_assoc() : null;
+
+                // Send payment confirmation notifications
+                try {
+                    $notificationResult = $this->messagingService->sendPaymentConfirmation([
+                        'email' => $data['email'],
+                        'phone' => $data['phone'],
+                        'name' => $data['full_name'],
+                        'amount' => $data['amount'],
+                        'payment_method' => 'Mobile Money (PayPack)',
+                        'transaction_id' => $data['gateway_transaction_id'],
+                        'rental_id' => $data['rental_id'],
+                        'admin_email' => $adminUser['email'] ?? 'admin@yourcarrental.com'
+                    ]);
+
+                    error_log("Notification result: " . json_encode($notificationResult));
+                } catch (Exception $notifError) {
+                    error_log("Notification failed but payment processed: " . $notifError->getMessage());
+                    // Don't fail the whole process if notifications fail
+                }
+
+                return [
+                    'success' => true,
+                    'rental_updated' => true,
+                    'payment_recorded' => true,
+                    'notifications_sent' => isset($notificationResult) ? $notificationResult : null
+                ];
+
+            } catch (Exception $dbError) {
+                // Rollback transaction on error
+                $this->conn->rollback();
+                error_log("Database transaction rolled back due to error: " . $dbError->getMessage());
+                throw $dbError;
+            }
 
         } catch (Exception $e) {
             error_log("Error handling completed payment: " . $e->getMessage());
-            return null;
+            error_log("Exception trace: " . $e->getTraceAsString());
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
         }
     }
 
-        /**
+
+    /**
      * Format phone number for PayPack API
-     * @param string $phoneNumber
-     * @return string
      */
     private function formatPhoneForPayPack($phoneNumber)
     {
         error_log("=== PHONE FORMATTING FOR PAYPACK ===");
         error_log("Original input: '" . $phoneNumber . "'");
 
-        // Use exact same logic as working test script
         $phone = preg_replace('/[^0-9]/', '', $phoneNumber);
         error_log("After removing non-digits: '" . $phone . "'");
 
@@ -433,7 +622,7 @@ class PayPackHandler
         } elseif (strlen($phone) == 9) {
             $formatted = '0' . $phone;
         } else {
-            $formatted = $phone; // Fallback - don't try to be too smart
+            $formatted = $phone;
         }
 
         error_log("Final formatted number: " . $formatted);
@@ -441,16 +630,15 @@ class PayPackHandler
     }
 
     /**
-     * Load PayPack settings from database
+     * Load PayPack settings from environment variables
      */
-       private function loadSettings()
+    private function loadSettings()
     {
         error_log("=== LOADING PAYPACK SETTINGS ===");
 
-        // Load from environment variables
         $this->clientId = $_ENV['PAYPACK_CLIENT_ID'] ?? getenv('PAYPACK_CLIENT_ID');
-        $this->clientSecret = $_ENV['PAYPACK_CLIENT_SECRET'] ?? getenv('PAYPACK_CLIENT_SECRET');
-        $this->apiUrl = $_ENV['PAYPACK_API_URL'] ?? getenv('PAYPACK_API_URL') ?? 'https://payments.paypack.rw/api';
+        $this->clientSecret = $_ENV['PAYPACK_CLIENT_SECRET'];
+        $this->apiUrl = $_ENV['PAYPACK_API_URL'];
 
         error_log("Final settings - Client ID: " . ($this->clientId ? 'SET' : 'NOT SET'));
         error_log("Final settings - Client Secret: " . ($this->clientSecret ? 'SET' : 'NOT SET'));
@@ -459,7 +647,6 @@ class PayPackHandler
 
     /**
      * Get PayPack authentication token
-     * @return string|false
      */
     private function getPaypackToken()
     {
@@ -529,43 +716,49 @@ class PayPackHandler
 
     /**
      * Check PayPack events for transaction status
-     * @param string $token
-     * @param string $reference
-     * @return array
      */
     private function checkPaypackEvents($token, $reference)
     {
+        error_log("=== CHECKING PAYPACK EVENTS ===");
+
         $curl = curl_init();
         $url = $this->apiUrl . "/events/transactions?ref=" . urlencode($reference);
-        
+
+        error_log("Events API URL: " . $url);
+
         curl_setopt_array($curl, array(
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_CUSTOMREQUEST => 'GET',
             CURLOPT_HTTPHEADER => array(
-                "Authorization: Bearer $token", 
+                "Authorization: Bearer $token",
                 "Accept: application/json"
             ),
             CURLOPT_TIMEOUT => 30,
         ));
-        
+
         $response = curl_exec($curl);
         $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $curl_error = curl_error($curl);
+
+        if ($curl_error) {
+            error_log("CURL error in events check: " . $curl_error);
+        }
+
         curl_close($curl);
-        
+
         $decoded = json_decode($response, true);
-        
+
         return [
             'http_code' => $http_code,
             'response' => $response,
-            'decoded' => $decoded
+            'decoded' => $decoded,
+            'curl_error' => $curl_error
         ];
     }
 
     /**
      * Get transaction details by ID
-     * @param int $transactionId
-     * @return array|null
      */
     public function getTransactionDetails($transactionId)
     {
@@ -588,13 +781,13 @@ class PayPackHandler
                 JOIN cars c ON r.car_id = c.car_id
                 WHERE pt.transaction_id = ?
             ");
-            
+
             $stmt->bind_param("i", $transactionId);
             $stmt->execute();
             $result = $stmt->get_result()->fetch_assoc();
-            
+
             return $result;
-            
+
         } catch (Exception $e) {
             error_log("Error getting transaction details: " . $e->getMessage());
             return null;
@@ -603,8 +796,6 @@ class PayPackHandler
 
     /**
      * Cancel a pending transaction
-     * @param int $transactionId
-     * @return array
      */
     public function cancelTransaction($transactionId)
     {
@@ -614,10 +805,10 @@ class PayPackHandler
                 SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP
                 WHERE transaction_id = ? AND status IN ('pending', 'processing')
             ");
-            
+
             $stmt->bind_param("i", $transactionId);
             $stmt->execute();
-            
+
             if ($stmt->affected_rows > 0) {
                 return [
                     'success' => true,
@@ -629,7 +820,7 @@ class PayPackHandler
                     'message' => 'Transaction not found or cannot be cancelled'
                 ];
             }
-            
+
         } catch (Exception $e) {
             error_log("Error cancelling transaction: " . $e->getMessage());
             return [

@@ -115,6 +115,12 @@ class AdminController
             case 'view':
                 $this->viewUser();
                 break;
+            case 'suspend':
+                $this->suspendUser();
+                break;
+            case 'activate':
+                $this->activateUser();
+                break;
             default:
                 $this->listUsers();
         }
@@ -265,6 +271,78 @@ class AdminController
         // This would require additional methods in the Admin model
 
         require 'views/admin/users/view.php';
+    }
+
+    private function suspendUser()
+    {
+        $userId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+        if ($userId <= 0) {
+            $_SESSION['error'] = "Invalid user ID.";
+            header('Location: index.php?page=admin&action=users');
+            exit();
+        }
+        // Fetch current user data
+        $user = $this->admin->getUserById($userId);
+        if (!$user) {
+            $_SESSION['error'] = "User not found.";
+            header('Location: index.php?page=admin&action=users');
+            exit();
+        }
+        $user['status'] = 'suspended';
+        $result = $this->admin->updateUser($userId, $user);
+        if ($result) {
+            // Send email notification
+            if (!empty($user['email'])) {
+                require_once __DIR__ . '/../includes/MessagingService.php';
+                $messaging = new MessagingService();
+                $messaging->sendAccountSuspension([
+                    'email' => $user['email'],
+                    'name' => $user['full_name'] ?? $user['username'],
+                ]);
+            }
+            $_SESSION['success'] = "User suspended and notified by email.";
+        } else {
+            $_SESSION['error'] = "Failed to suspend user.";
+        }
+        header('Location: index.php?page=admin&action=users');
+        exit();
+    }
+
+    private function activateUser()
+    {
+        $userId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+        if ($userId <= 0) {
+            $_SESSION['error'] = "Invalid user ID.";
+            header('Location: index.php?page=admin&action=users');
+            exit();
+        }
+        // Fetch current user data
+        $user = $this->admin->getUserById($userId);
+        if (!$user) {
+            $_SESSION['error'] = "User not found.";
+            header('Location: index.php?page=admin&action=users');
+            exit();
+        }
+        $user['status'] = 'active';
+        $result = $this->admin->updateUser($userId, $user);
+        if ($result) {
+            // Optionally send activation email
+            if (!empty($user['email'])) {
+                require_once __DIR__ . '/../includes/MessagingService.php';
+                $messaging = new MessagingService();
+                if (method_exists($messaging, 'sendAccountActivation')) {
+                    $messaging->sendAccountActivation([
+                        'email' => $user['email'],
+                        'name' => $user['full_name'] ?? $user['username'],
+                    ]);
+                }
+            }
+            $_SESSION['success'] = "User activated.";
+        } else {
+            $_SESSION['error'] = "Failed to activate user.";
+        }
+        header('Location: index.php?page=admin&action=users');
+        exit();
     }
     private function manageCars()
     {

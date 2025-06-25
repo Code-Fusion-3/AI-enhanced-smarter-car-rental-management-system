@@ -37,7 +37,7 @@ function calculateDays($startDate, $endDate)
 // Format currency
 function formatCurrency($amount)
 {
-    return 'RWF ' . number_format($amount, 0);
+    return 'RWF ' . number_format((float)$amount, 0, '.', ',');
 }
 
 // Log system activity

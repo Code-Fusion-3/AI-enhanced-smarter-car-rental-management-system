@@ -44,15 +44,37 @@ class Router
                 break;
             case 'payments':
                 require_once 'controllers/PaymentsController.php';
-                $controller = new PaymentsController();
-                if ($action === 'pay') {
-                    $controller->pay();
-                } elseif ($action === 'process') {
-                    $controller->process();
-                } else {
-                    require 'views/404.php';
-                }
-                break;
+
+            $paymentsController = new PaymentsController();
+            $action = $_GET['action'] ?? 'pay';
+    
+    switch ($action)
+    {
+        case 'pay':
+            $paymentsController->pay();
+            break;
+        case 'process':
+            $paymentsController->process();
+            break;
+        case 'pending':
+            $paymentsController->pending();
+            break;
+        case 'checkStatus':
+            $paymentsController->checkStatus();
+            break;
+        case 'success':
+            $paymentsController->success();
+            break;
+        case 'cancel':
+            $paymentsController->cancel();
+            break;
+        case 'manualComplete':
+            $paymentsController->manualComplete();
+            break;
+        default:
+            $paymentsController->pay();
+    }
+    break;
             case 'promotions':
                 require 'views/promotions.php';
                 break;

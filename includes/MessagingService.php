@@ -20,7 +20,8 @@ class MessagingService
     /**
      * Send email using PHPMailer
      */
-    private function sendEmail($to, $subject, $body, $plainText = '') {
+    private function sendEmail($to, $subject, $body, $plainText = '')
+    {
         $mail = new PHPMailer(true);
         try {
             // Server settings
@@ -31,20 +32,20 @@ class MessagingService
             $mail->Password = 'zaoxwuezfjpglwjb';
             $mail->SMTPSecure = 'tls';
             $mail->Port = 587;
-            
+
             // Recipients
             $mail->setFrom('infofonepo@gmail.com', 'Car Rental Management System');
             $mail->addAddress($to);
-            
+
             // Content
             $mail->isHTML(true);
             $mail->Subject = $subject;
             $mail->Body = $body;
-            
+
             if (!empty($plainText)) {
                 $mail->AltBody = $plainText;
             }
-            
+
             $mail->send();
             return true;
         } catch (Exception $e) {
@@ -52,15 +53,16 @@ class MessagingService
             return false;
         }
     }
-    
+
     /**
      * Generate payment confirmation email template for car rental (Customer)
      */
-    private function getPaymentConfirmationEmailTemplate($clientName, $amount, $transactionId, $paymentMethod, $rentalId) {
+    private function getPaymentConfirmationEmailTemplate($clientName, $amount, $transactionId, $paymentMethod, $rentalId)
+    {
         $formattedAmount = number_format($amount, 2);
         $currentDate = date('F j, Y \a\t g:i A');
         $currentYear = date('Y');
-        
+
         return <<<HTML
         <!DOCTYPE html>
         <html>
@@ -271,11 +273,12 @@ HTML;
     /**
      * Generate admin notification email template for car rental payment
      */
-    private function getAdminNotificationEmailTemplate($clientName, $clientEmail, $amount, $transactionId, $paymentMethod, $rentalId) {
+    private function getAdminNotificationEmailTemplate($clientName, $clientEmail, $amount, $transactionId, $paymentMethod, $rentalId)
+    {
         $formattedAmount = number_format($amount, 2);
         $currentDate = date('F j, Y \a\t g:i A');
         $currentYear = date('Y');
-        
+
         return <<<HTML
         <!DOCTYPE html>
         <html>
@@ -497,7 +500,7 @@ HTML;
         try {
             error_log("=== SENDING CAR RENTAL PAYMENT CONFIRMATION ===");
             error_log("Payment data: " . json_encode($data));
-            
+
             $clientName = $data['name'] ?? 'Customer';
             $clientEmail = $data['email'] ?? '';
             $adminEmail = $data['admin_email'] ?? '';
@@ -505,23 +508,23 @@ HTML;
             $paymentMethod = $data['payment_method'] ?? 'Card';
             $transactionId = $data['transaction_id'] ?? '';
             $rentalId = $data['rental_id'] ?? '';
-            
+
             $customerEmailSent = false;
             $adminEmailSent = false;
-            
+
             // Send Email to Customer
             if (!empty($clientEmail)) {
                 error_log("Sending customer email to: " . $clientEmail);
-                
+
                 $subject = "Car Rental Payment Confirmation - Booking #{$rentalId}";
                 $htmlMessage = $this->getPaymentConfirmationEmailTemplate(
-                    $clientName, 
-                    $amount, 
-                    $transactionId, 
+                    $clientName,
+                    $amount,
+                    $transactionId,
                     $paymentMethod,
                     $rentalId
                 );
-                
+
                 $plainTextMessage = "
 Car Rental Payment Confirmation
 
@@ -542,25 +545,25 @@ Thank you for choosing our car rental service!
 Best regards,
 Smart Car Rental Management System
                 ";
-                
+
                 $customerEmailSent = $this->sendEmail($clientEmail, $subject, $htmlMessage, $plainTextMessage);
                 error_log("Customer email sent: " . ($customerEmailSent ? 'YES' : 'NO'));
             }
-            
+
             // Send Email to Admin
             if (!empty($adminEmail)) {
                 error_log("Sending admin notification email to: " . $adminEmail);
-                
+
                 $adminSubject = "New Car Rental Payment Received - Booking #{$rentalId}";
                 $adminHtmlMessage = $this->getAdminNotificationEmailTemplate(
                     $clientName,
                     $clientEmail,
-                    $amount, 
-                    $transactionId, 
+                    $amount,
+                    $transactionId,
                     $paymentMethod,
                     $rentalId
                 );
-                
+
                 $adminPlainTextMessage = "
 New Car Rental Payment Received
 
@@ -582,11 +585,11 @@ Please process the rental booking accordingly.
 Best regards,
 Car Rental Management System
                 ";
-                
+
                 $adminEmailSent = $this->sendEmail($adminEmail, $adminSubject, $adminHtmlMessage, $adminPlainTextMessage);
                 error_log("Admin email sent: " . ($adminEmailSent ? 'YES' : 'NO'));
             }
-            
+
             return [
                 'success' => true,
                 'customer_email_sent' => $customerEmailSent,
@@ -594,7 +597,7 @@ Car Rental Management System
                 'sms_sent' => false, // SMS disabled
                 'message' => 'Payment confirmation emails processed successfully'
             ];
-            
+
         } catch (Exception $e) {
             error_log("Error sending payment confirmation: " . $e->getMessage());
             return [
@@ -602,5 +605,35 @@ Car Rental Management System
                 'message' => 'Error sending email notifications: ' . $e->getMessage()
             ];
         }
+    }
+
+    /**
+     * Send account suspension email
+     * @param array $data [email, name]
+     * @return bool
+     */
+    public function sendAccountSuspension($data)
+    {
+        $to = $data['email'] ?? '';
+        $name = $data['name'] ?? 'User';
+        $subject = 'Your Account Has Been Suspended';
+        $body = "<p>Dear {$name},</p><p>Your account on our Car Rental Management System has been <b>suspended</b> by an administrator. You will not be able to log in or use our services until your account is reactivated.</p><p>If you believe this is a mistake, please contact support.</p><p>Best regards,<br>Car Rental Management Team</p>";
+        $plain = "Dear {$name},\n\nYour account on our Car Rental Management System has been suspended by an administrator. You will not be able to log in or use our services until your account is reactivated.\n\nIf you believe this is a mistake, please contact support.\n\nBest regards,\nCar Rental Management Team";
+        return $this->sendEmail($to, $subject, $body, $plain);
+    }
+
+    /**
+     * Send account activation email
+     * @param array $data [email, name]
+     * @return bool
+     */
+    public function sendAccountActivation($data)
+    {
+        $to = $data['email'] ?? '';
+        $name = $data['name'] ?? 'User';
+        $subject = 'Your Account Has Been Activated';
+        $body = "<p>Dear {$name},</p><p>Your account on our Car Rental Management System has been <b>activated</b>. You can now log in and use our services again.</p><p>Best regards,<br>Car Rental Management Team</p>";
+        $plain = "Dear {$name},\n\nYour account on our Car Rental Management System has been activated. You can now log in and use our services again.\n\nBest regards,\nCar Rental Management Team";
+        return $this->sendEmail($to, $subject, $body, $plain);
     }
 }
